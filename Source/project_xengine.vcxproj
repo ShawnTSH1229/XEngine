@@ -1,0 +1,224 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A9D159C5-155D-C789-1E6E-4A7E8A78238A}</ProjectGuid>
+    <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>project_xengine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>..\bin\Debug-windows-x86_64\project_xengine\</OutDir>
+    <IntDir>..\bin-int\Debug-windows-x86_64\project_xengine\</IntDir>
+    <TargetName>project_xengine</TargetName>
+    <TargetExt>.exe</TargetExt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\bin\Release-windows-x86_64\project_xengine\</OutDir>
+    <IntDir>..\bin-int\Release-windows-x86_64\project_xengine\</IntDir>
+    <TargetName>project_xengine</TargetName>
+    <TargetExt>.exe</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>X_PLATFORM_WIN;X_RHI_DX12;XE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..\boost_1_78_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/MTd %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3dcompiler.lib;D3D12.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>X_PLATFORM_WIN;X_RHI_DX12;XE_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;..\boost_1_78_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/MT %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>d3dcompiler.lib;D3D12.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Editor\EditorUI.h" />
+    <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="Runtime\Core\Math\Math.h" />
+    <ClInclude Include="Runtime\Core\Math\Matrix.h" />
+    <ClInclude Include="Runtime\Core\Math\SimpleMath.h" />
+    <ClInclude Include="Runtime\Core\PixelFormat.h" />
+    <ClInclude Include="Runtime\Core\ResourceCreateDataInterface.h" />
+    <ClInclude Include="Runtime\Core\Template\XEngineTemplate.h" />
+    <ClInclude Include="Runtime\Core\XMath.h" />
+    <ClInclude Include="Runtime\CoreGObject\GObjtect\Object.h" />
+    <ClInclude Include="Runtime\CoreGObject\GObjtect\Reflection.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12AbstractDevice.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Adapter.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Allocation.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12CommandList.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12CommandQueue.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Common.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Context.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12DescriptorArray.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12OnlineDescArray.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12OnlineDescArrayManager.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12PassStateManager.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12PhysicDevice.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12PipelineLibrary.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12PipelineState.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12PlatformRHI.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Resource.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Rootsignature.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Shader.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12State.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Texture.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12View.h" />
+    <ClInclude Include="Runtime\D3D12RHI\D3D12Viewport.h" />
+    <ClInclude Include="Runtime\D3D12RHI\d3dx12.h" />
+    <ClInclude Include="Runtime\DataStruct\XRefCountPtr.h" />
+    <ClInclude Include="Runtime\Engine\Classes\EngineTypes.h" />
+    <ClInclude Include="Runtime\Engine\Material\MaterialShaderMapSet.h" />
+    <ClInclude Include="Runtime\Engine\Material\MaterialShared.h" />
+    <ClInclude Include="Runtime\Engine\SceneView.h" />
+    <ClInclude Include="Runtime\Engine\ShaderCompiler\ShaderCompiler.h" />
+    <ClInclude Include="Runtime\Engine\UIBackend.h" />
+    <ClInclude Include="Runtime\HAL\Mch.h" />
+    <ClInclude Include="Runtime\HAL\PlatformTypes.h" />
+    <ClInclude Include="Runtime\RHI\PipelineStateCache.h" />
+    <ClInclude Include="Runtime\RHI\PlatformRHI.h" />
+    <ClInclude Include="Runtime\RHI\RHI.h" />
+    <ClInclude Include="Runtime\RHI\RHICommandList.h" />
+    <ClInclude Include="Runtime\RHI\RHIContext.h" />
+    <ClInclude Include="Runtime\RHI\RHIDefines.h" />
+    <ClInclude Include="Runtime\RHI\RHIResource.h" />
+    <ClInclude Include="Runtime\RHI\RHIStaticStates.h" />
+    <ClInclude Include="Runtime\Render\BasePassRendering.h" />
+    <ClInclude Include="Runtime\Render\DeferredShadingRenderer.h" />
+    <ClInclude Include="Runtime\Render\MaterialShader.h" />
+    <ClInclude Include="Runtime\Render\MeshMaterialShader.h" />
+    <ClInclude Include="Runtime\Render\MeshPassProcessor.h" />
+    <ClInclude Include="Runtime\Render\SceneRendering.h" />
+    <ClInclude Include="Runtime\RenderCore\CommonRenderRresource.h" />
+    <ClInclude Include="Runtime\RenderCore\GlobalShader.h" />
+    <ClInclude Include="Runtime\RenderCore\RenderResource.h" />
+    <ClInclude Include="Runtime\RenderCore\Shader.h" />
+    <ClInclude Include="Runtime\RenderCore\ShaderCore.h" />
+    <ClInclude Include="Runtime\RenderCore\ShaderParameter.h" />
+    <ClInclude Include="Runtime\RenderCore\VertexFactory.h" />
+    <ClInclude Include="ThirdParty\stb_image.h" />
+    <ClInclude Include="UnitTest\GameTimer.h" />
+    <ClInclude Include="UnitTest\GeometryGenerator.h" />
+    <ClInclude Include="UnitTest\MathHelper.h" />
+    <ClInclude Include="UnitTest\d3dApp.h" />
+    <ClInclude Include="UnitTest\d3dUtil.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CrateApp.cpp" />
+    <ClCompile Include="Editor\EditorUI.cpp" />
+    <ClCompile Include="Runtime\Core\Math\Math.cpp" />
+    <ClCompile Include="Runtime\Core\Math\SimpleMath.cpp" />
+    <ClCompile Include="Runtime\Core\XMath.cpp" />
+    <ClCompile Include="Runtime\CoreGObject\GObjtect\Object.cpp" />
+    <ClCompile Include="Runtime\CoreGObject\GObjtect\Reflection.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12AbstractDevice.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Adapter.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Allocation.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Buffer.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12CommandList.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12CommandQueue.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Context.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12DescriptorArray.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12OnlineDescArray.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12OnlineDescArrayManager.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12PassStateManager.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12PhysicDevice.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12PipelineLibraryWindows.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12PlatformRHI.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Resource.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Rootsignature.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Shader.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12State.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Texture.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12VIBuffer.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12VertexDeclaration.cpp" />
+    <ClCompile Include="Runtime\D3D12RHI\D3D12Viewport.cpp" />
+    <ClCompile Include="Runtime\Engine\Material\MaterialShader.cpp" />
+    <ClCompile Include="Runtime\Engine\Material\MaterialShared.cpp" />
+    <ClCompile Include="Runtime\Engine\SceneView.cpp" />
+    <ClCompile Include="Runtime\Engine\ShaderCompiler\ShaderCompiler.cpp" />
+    <ClCompile Include="Runtime\Engine\UIBackend.cpp" />
+    <ClCompile Include="Runtime\RHI\PipelineStateCache.cpp" />
+    <ClCompile Include="Runtime\RHI\PlatformRHI.cpp" />
+    <ClCompile Include="Runtime\RHI\RHI.cpp" />
+    <ClCompile Include="Runtime\RHI\Windows\WindowsRHI.cpp" />
+    <ClCompile Include="Runtime\ReflectionGen\Object.gen.cpp" />
+    <ClCompile Include="Runtime\RenderCore\CommonRenderRresource.cpp" />
+    <ClCompile Include="Runtime\RenderCore\GlobalShader.cpp" />
+    <ClCompile Include="Runtime\RenderCore\RenderResource.cpp" />
+    <ClCompile Include="Runtime\RenderCore\Shader.cpp" />
+    <ClCompile Include="Runtime\RenderCore\ShaderParameter.cpp" />
+    <ClCompile Include="Runtime\RenderCore\VertexFactory.cpp" />
+    <ClCompile Include="UnitTest\GameTimer.cpp" />
+    <ClCompile Include="UnitTest\GeometryGenerator.cpp" />
+    <ClCompile Include="UnitTest\MathHelper.cpp" />
+    <ClCompile Include="UnitTest\d3dApp.cpp" />
+    <ClCompile Include="UnitTest\d3dUtil.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
