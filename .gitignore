@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+
+*.sln
+/bin/*
+/bin-int/*
+/.vs/*
+/build/*
+/cbuild/*
+/packages/*
