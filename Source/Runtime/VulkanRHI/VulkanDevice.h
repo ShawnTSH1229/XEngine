@@ -7,14 +7,12 @@
 
 class XVulkanDescriptorPoolsManager;
 
-#if RHI_RAYTRACING
 struct XVulkanDeviceExtensionProperties
 {
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR AccelerationStructure;
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingPipeline;
 	VkPhysicalDeviceDescriptorBufferPropertiesEXT DescriptorBufferProps;
 };
-#endif // VULKAN_RHI_RAYTRACING
 
 class XVulkanDevice
 {
@@ -67,12 +65,11 @@ public:
 		return BindlessDescriptorManager;
 	}
 
-#if RHI_RAYTRACING
 	inline const XVulkanDeviceExtensionProperties& GetDeviceExtensionProperties() const
 	{
 		return DeviceExtensionProperties;
 	}
-#endif
+
 
 	class XVulkanPipelineStateCacheManager* PipelineStateCache;
 private:
@@ -104,7 +101,5 @@ private:
 	XVulkanSurface* DefaultImage;
 	XVulkanTextureView DefaultTextureView;
 
-#if RHI_RAYTRACING
 	XVulkanDeviceExtensionProperties DeviceExtensionProperties;
-#endif
 };

@@ -650,7 +650,7 @@ void XVulkanRayTracingScene::BuildPerInstanceGeometryParameterBuffer(XVulkanComm
 	}
 	PerInstanceGeometryParameterBuffer->UnLock(&CmdContext);
 }
-#endif
+
 
 XVulkanBindlessDescriptorManager::XUniformBufferDescriptorArrays GetStageUBs(XVulkanDevice* Device, const XRayTracingShaderBinds& InGlobalResoruceBindings)
 {
@@ -753,3 +753,5 @@ XVulkanRayTracingShaderTable::XVulkanShaderTableAllocation& XVulkanRayTracingSha
 	XVulkanRayTracingShaderTable::XVulkanShaderTableAllocation EmptyAlloc;
 	return EmptyAlloc;
 }
+
+#endif

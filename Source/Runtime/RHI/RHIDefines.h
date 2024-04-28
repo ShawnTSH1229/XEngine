@@ -3,7 +3,7 @@
 #include "Runtime\HAL\PlatformTypes.h"
 #include "Runtime\Core\Template\XEngineTemplate.h"
 
-#define RHI_RAYTRACING 1
+#define RHI_RAYTRACING 0
 
 enum class EShaderType
 {
@@ -11,10 +11,11 @@ enum class EShaderType
 	SV_Pixel,
 	SV_Compute,
 
+#if RHI_RAYTRACING
 	SV_RayGen,
 	SV_RayMiss,
 	SV_HitGroup,
-
+#endif
 	SV_ShaderCount
 };
 

@@ -1,5 +1,6 @@
 #include "ShaderParameter.h"
 
+#if RHI_RAYTRACING
 void SetShaderParameters(XRayTracingShaderBindsWriter& RTBindingsWriter, const XShaderParameterMap& ShaderParameterMap, std::vector<XRHIShaderResourceView*>& SRVs, std::vector<XRHIUnorderedAcessView*>& UAVs)
 {
 	uint32 SRVInex = 0;
@@ -27,3 +28,4 @@ void SetShaderParameters(XRayTracingShaderBindsWriter& RTBindingsWriter, const X
 		}
 	}
 }
+#endif
