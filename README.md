@@ -6,7 +6,7 @@
 
 Visual Studio 2019 or 2011 is recommended, XEngine is only tested on Windows.
 
-1. Cloning the repository with `git clone https://github.com/ShawnTSH1229/XEngine.git`.
+1.Cloning the repository with `git clone https://github.com/ShawnTSH1229/XEngine.git`.
 
 ## Features
 
