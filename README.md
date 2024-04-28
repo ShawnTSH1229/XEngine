@@ -4,9 +4,20 @@
 
 ## Getting Started
 
-Visual Studio 2019 or 2011 is recommended, XEngine is only tested on Windows.
+Visual Studio 2019 or 2022 is recommended, XEngine is only tested on Windows.
 
 1.Cloning the repository with `git clone https://github.com/ShawnTSH1229/XEngine.git`.
+
+2.Configuring the build
+
+```shell
+# Create a build directory
+mkdir build
+cd build
+
+# x86-64 using a Visual Studio solution
+cmake -G "Visual Studio 17 2022" ../
+```
 
 ## Features
 
