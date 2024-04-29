@@ -189,7 +189,7 @@ static void TilesShadowViewProjMatrixBuild(XBoundSphere& SceneBoundingSphere,XMa
 
 
 
-void XDeferredShadingRenderer::VSMUpdate()
+void XDeferredShadingRenderer::VSMUpdate_Deprecated()
 {
 	VSMTileMaskStruct TileMaskStructIns;
 	TileMaskStructIns.LighgViewProject = LightViewProjMat;
@@ -204,7 +204,7 @@ void XDeferredShadingRenderer::VSMUpdate()
 	VirtualShadowMapResourece.RHICbCullingParameters->UpdateData(&CbCullingParametersStructIns, sizeof(CbCullingParametersStruct), 0);
 }
 
-void XDeferredShadingRenderer::VSMTileMaskPass(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::VSMTileMaskPass_Deprecated(XRHICommandList& RHICmdList)
 {
 	RHICmdList.RHIEventBegin(1, "VSMTileMaskCS", sizeof("VSMTileMaskCS"));
 	TShaderReference<VSMTileMaskCS> Shader = GetGlobalShaderMapping()->GetShader<VSMTileMaskCS>();
@@ -261,7 +261,7 @@ VSMPageTableGenCS::ShaderInfos VSMPageTableGenCS::StaticShaderInfos(
 	VSMPageTableGenCS::ModifyShaderCompileSettings);
 
 
-void XDeferredShadingRenderer::VSMPageTableGen(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::VSMPageTableGen_Deprecated(XRHICommandList& RHICmdList)
 {
 	RHICmdList.RHIEventBegin(1, "VSMPageTableGenCS", sizeof("VSMPageTableGenCS"));
 	RHIResetStructBufferCounter(VirtualShadowMapResourece.VSMCounterBuffer.get(), 0);
@@ -321,7 +321,7 @@ ShadowCommandBuildCS::ShaderInfos ShadowCommandBuildCS::StaticShaderInfos(
 	ShadowCommandBuildCS::ModifyShaderCompileSettings);
 
 
-void XDeferredShadingRenderer::VSMShadowCommandBuild(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::VSMShadowCommandBuild_Deprecated(XRHICommandList& RHICmdList)
 {
 	TilesShadowViewProjMatrixBuild(SceneBoundingSphere, LightViewMat, ShadowLightDir);
 
@@ -391,32 +391,32 @@ XShadowPerTileProjectionPS::ShaderInfos XShadowPerTileProjectionPS::StaticShader
 	"PS", EShaderType::SV_Pixel, XShadowPerTileProjectionPS::CustomConstrucFunc,
 	XShadowPerTileProjectionPS::ModifyShaderCompileSettings);
 
-void XDeferredShadingRenderer::VirtualShadowMapGen(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::VirtualShadowMapGen_Deprecated(XRHICommandList& RHICmdList)
 {
-	XRHITexture* PlaceHodeltargetTex = VirtualShadowMapResourece.PlaceHodeltarget.get();
-	XRHIRenderPassInfo RPInfos(1, &PlaceHodeltargetTex, ERenderTargetLoadAction::EClear, nullptr, EDepthStencilLoadAction::ENoAction);
-	RHICmdList.RHIBeginRenderPass(RPInfos, "VirtualShadowMapGenPass", sizeof("VirtualShadowMapGenPass"));
-	RHICmdList.CacheActiveRenderTargets(RPInfos);
-
-	XGraphicsPSOInitializer GraphicsPSOInit;
-	GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
-	GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<>::GetRHI();
-	GraphicsPSOInit.RasterState = TStaticRasterizationState<>::GetRHI();
-
-	TShaderReference<XShadowPerTileProjectionVS> VertexShader = GetGlobalShaderMapping()->GetShader<XShadowPerTileProjectionVS>();
-	TShaderReference<XShadowPerTileProjectionPS> PixelShader = GetGlobalShaderMapping()->GetShader<XShadowPerTileProjectionPS>();
-	GraphicsPSOInit.BoundShaderState.RHIVertexShader = VertexShader.GetVertexShader();
-	GraphicsPSOInit.BoundShaderState.RHIPixelShader = PixelShader.GetPixelShader();
-	std::shared_ptr<XRHIVertexLayout> RefVertexLayout = DefaultVertexFactory.GetLayout(ELayoutType::Layout_Default);
-	GraphicsPSOInit.BoundShaderState.RHIVertexLayout = RefVertexLayout.get();
-
-	RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
-	SetGraphicsPipelineStateFromPSOInit(RHICmdList, GraphicsPSOInit);
-	PixelShader->SetParameters(RHICmdList, GetRHIUAVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get()), GetRHISRVFromTexture(SceneTargets.PagetableInfos.get()));
-	RHICmdList.RHIExecuteIndirect(VirtualShadowMapResourece.RHIShadowCommandSignature.get(), RenderGeos.size() * 12,
-		VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCmdBufferOffset, 
-		VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCounterOffset);
-	RHICmdList.RHIEndRenderPass();
+	//XRHITexture* PlaceHodeltargetTex = VirtualShadowMapResourece.PlaceHodeltarget.get();
+	//XRHIRenderPassInfo RPInfos(1, &PlaceHodeltargetTex, ERenderTargetLoadAction::EClear, nullptr, EDepthStencilLoadAction::ENoAction);
+	//RHICmdList.RHIBeginRenderPass(RPInfos, "VirtualShadowMapGenPass", sizeof("VirtualShadowMapGenPass"));
+	//RHICmdList.CacheActiveRenderTargets(RPInfos);
+	//
+	//XGraphicsPSOInitializer GraphicsPSOInit;
+	//GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+	//GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<>::GetRHI();
+	//GraphicsPSOInit.RasterState = TStaticRasterizationState<>::GetRHI();
+	//
+	//TShaderReference<XShadowPerTileProjectionVS> VertexShader = GetGlobalShaderMapping()->GetShader<XShadowPerTileProjectionVS>();
+	//TShaderReference<XShadowPerTileProjectionPS> PixelShader = GetGlobalShaderMapping()->GetShader<XShadowPerTileProjectionPS>();
+	//GraphicsPSOInit.BoundShaderState.RHIVertexShader = VertexShader.GetVertexShader();
+	//GraphicsPSOInit.BoundShaderState.RHIPixelShader = PixelShader.GetPixelShader();
+	//std::shared_ptr<XRHIVertexLayout> RefVertexLayout = DefaultVertexFactory.GetLayout(ELayoutType::Layout_Default);
+	//GraphicsPSOInit.BoundShaderState.RHIVertexLayout = RefVertexLayout.get();
+	//
+	//RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+	//SetGraphicsPipelineStateFromPSOInit(RHICmdList, GraphicsPSOInit);
+	//PixelShader->SetParameters(RHICmdList, GetRHIUAVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get()), GetRHISRVFromTexture(SceneTargets.PagetableInfos.get()));
+	//RHICmdList.RHIExecuteIndirect(VirtualShadowMapResourece.RHIShadowCommandSignature.get(), RenderGeos.size() * 12,
+	//	VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCmdBufferOffset, 
+	//	VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCounterOffset);
+	//RHICmdList.RHIEndRenderPass();
 }
 
 class VSMTileMaskClearCS :public XGloablShader
@@ -465,7 +465,7 @@ void XDeferredShadingRenderer::VSMTileMaskClear(XRHICommandList& RHICmdList)
 }
 
 
-void XDeferredShadingRenderer::VSMSetup()
+void XDeferredShadingRenderer::VSMSetup_Deprecated()
 {
 	std::vector<XRHIIndirectArg>IndirectShadowArgs;
 	IndirectShadowArgs.resize(6);
@@ -510,21 +510,19 @@ void XDeferredShadingRenderer::VSMSetup()
 	uint32 OutCmdDataSize;
 	void* DataPtrret = RHIGetCommandDataPtr(RHICmdData, OutCmdDataSize);
 
-	uint32 ShadowPassIndirectBufferDataSize = OutCmdDataSize * (RHICmdData.size() * 12);
+	uint32 ShadowPassIndirectCommandNoCulledSize = OutCmdDataSize * RHICmdData.size();
 	FResourceVectorUint8 ShadowIndirectBufferData;
 	ShadowIndirectBufferData.Data = DataPtrret;
-	ShadowIndirectBufferData.SetResourceDataSize(ShadowPassIndirectBufferDataSize);
+	ShadowIndirectBufferData.SetResourceDataSize(ShadowPassIndirectCommandNoCulledSize);
 	XRHIResourceCreateData IndirectBufferResourceData(&ShadowIndirectBufferData);
-	VirtualShadowMapResourece.ShadowCmdBufferNoCulling = RHIcreateStructBuffer(OutCmdDataSize, ShadowPassIndirectBufferDataSize,
-		EBufferUsage(int(EBufferUsage::BUF_DrawIndirect) | (int)EBufferUsage::BUF_ShaderResource), IndirectBufferResourceData);
-
-	VirtualShadowMapResourece.ShadowCmdBufferOffset = RHIGetCmdBufferOffset(VirtualShadowMapResourece.ShadowCmdBufferNoCulling.get());
-	VirtualShadowMapResourece.ShadowCounterOffset = AlignArbitrary(ShadowPassIndirectBufferDataSize, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
-
-	VirtualShadowMapResourece.ShadowCmdBufferCulled = RHIcreateStructBuffer(ShadowPassIndirectBufferDataSize, VirtualShadowMapResourece.ShadowCounterOffset + sizeof(UINT),
-		EBufferUsage(int(EBufferUsage::BUF_StructuredBuffer) | int(EBufferUsage::BUF_UnorderedAccess)), nullptr);
-
+	VirtualShadowMapResourece.ShadowCmdBufferNoCulling = RHIcreateStructBuffer(OutCmdDataSize, ShadowPassIndirectCommandNoCulledSize, EBufferUsage(int(EBufferUsage::BUF_DrawIndirect) | (int)EBufferUsage::BUF_ShaderResource), IndirectBufferResourceData);
 	VirtualShadowMapResourece.ShadowNoCullCmdBufferSRV = RHICreateShaderResourceView(VirtualShadowMapResourece.ShadowCmdBufferNoCulling.get());
+
+	uint32 ShadowPassIndirectCommandCulledSize = AlignArbitrary(OutCmdDataSize * RHICmdData.size(), D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
+	VirtualShadowMapResourece.ShadowCmdBufferCulled = RHIcreateStructBuffer(ShadowPassIndirectCommandCulledSize, ShadowPassIndirectCommandCulledSize, EBufferUsage(int(EBufferUsage::BUF_StructuredBuffer) | int(EBufferUsage::BUF_UnorderedAccess)), nullptr);
+	VirtualShadowMapResourece.ShadowCmdBufferOffset = RHIGetCmdBufferOffset(VirtualShadowMapResourece.ShadowCmdBufferCulled.get());
+	VirtualShadowMapResourece.ShadowCounterOffset = 0;
+	
 	VirtualShadowMapResourece.ShadowCulledCmdBufferUAV = RHICreateUnorderedAccessView(VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), true, true, VirtualShadowMapResourece.ShadowCounterOffset);
 	VirtualShadowMapResourece.VSMCounterBufferUAV = RHICreateUnorderedAccessView(VirtualShadowMapResourece.VSMCounterBuffer.get(), true, true, 0);
 }

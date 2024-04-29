@@ -99,7 +99,7 @@ float3 SurfaceShading( FGBufferData GBuffer, float Roughness, float3 L, float3 V
 	//}
 }
 
-float4 GetDynamicLighting(float3 CameraVector, FGBufferData GBuffer, uint ShadingModelID)
+float3 GetDynamicLighting(float3 CameraVector, FGBufferData GBuffer, uint ShadingModelID)
 {
 	float3 L = normalize(LightDir);
 	float3 V = -CameraVector;
@@ -111,7 +111,7 @@ float4 GetDynamicLighting(float3 CameraVector, FGBufferData GBuffer, uint Shadin
 	SurfaceLighting*=(saturate(dot(L,N))*LightColorAndIntensityInLux.xyz*LightColorAndIntensityInLux.w);
 	//////////////////////////////////////////////////////////////////////////
 	
-	return float4(SurfaceLighting.xyz,1.0f);
+	return SurfaceLighting;
 }
 
 void DeferredLightPixelMain(
@@ -122,7 +122,7 @@ void DeferredLightPixelMain(
 	)
 {
 	float DeviceZ=SceneTexturesStruct_SceneDepthTexture.Sample(gsamPointWarp,ScreenUV).r;
-	if(DeviceZ<0.01)
+	if(DeviceZ == 0)
 	{
 		OutColor=float4(0,0,0,0);
 		return;
@@ -149,11 +149,11 @@ void DeferredLightPixelMain(
 	}
 
 	//DeferredLightingCommon.ush
-	float4 SurfaceLighting;
+	float3 SurfaceLighting;
 	{
 		float Shadow=ShadowMaskTex.Sample(gsamPointWarp,ScreenUV).r;
-		SurfaceLighting=(1.0-Shadow)*GetDynamicLighting(CameraVector,GBuffer,GBuffer.ShadingModelID);
-		
+		Shadow = 0.0;
+		SurfaceLighting=(1.0-Shadow)*GetDynamicLighting(CameraVector,GBuffer,GBuffer.ShadingModelID) + GBuffer.BaseColor * 0.1;
 	}
     OutColor=float4(SurfaceLighting.xyz,1.0f);
 }

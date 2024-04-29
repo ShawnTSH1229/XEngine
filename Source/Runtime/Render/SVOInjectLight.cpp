@@ -5,7 +5,6 @@
 #include "Runtime/RHI/RHIStaticStates.h"
 
 #include "VoxelizationScene.h"
-#include "ShadowMap_Old.h"
 
 #if USE_SVOGI
 class ShadowMapInjectLightCS :public XGloablShader

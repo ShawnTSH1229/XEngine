@@ -37,7 +37,7 @@ public:
     float LightIntensity = 7.0f;
     void SceneBuild()
     {
-        CreateVSMTestScene(RenderGeos);
+        CreateVSMTestScene(RenderGeos, SceneBoundingSphere);
     }
 
     void Init()
@@ -58,8 +58,6 @@ public:
         SceneBuild();
         MainInit::InitAfterRHI();
         XApplication::Application->UISetup();
-        SceneBoundingSphere.Center = XVector3(0, 0, 0);
-        SceneBoundingSphere.Radius = 48.0f;
         float AspectRatio = static_cast<float>(XApplication::Application->ClientWidth) / static_cast<float>(XApplication::Application->
             ClientHeight);
         CamIns.SetPerspective(FoVAngleY, AspectRatio, Near, Far);

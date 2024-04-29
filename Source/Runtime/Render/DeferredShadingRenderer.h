@@ -56,13 +56,13 @@ public:
 	void PreDepthPassRendering(XRHICommandList& RHICmdList);
 
 	//Virtual Shadow Map Generate
-	void VSMSetup();
-	void VSMUpdate();
+	void VSMSetup_Deprecated();
+	void VSMUpdate_Deprecated();
 
-	void VSMTileMaskPass(XRHICommandList& RHICmdList);
-	void VSMPageTableGen(XRHICommandList& RHICmdList);
-	void VSMShadowCommandBuild(XRHICommandList& RHICmdList);
-	void VirtualShadowMapGen(XRHICommandList& RHICmdList);
+	void VSMTileMaskPass_Deprecated(XRHICommandList& RHICmdList);
+	void VSMPageTableGen_Deprecated(XRHICommandList& RHICmdList);
+	void VSMShadowCommandBuild_Deprecated(XRHICommandList& RHICmdList);
+	void VirtualShadowMapGen_Deprecated(XRHICommandList& RHICmdList);
 
 	//HZBPass
 	void HZBPass(XRHICommandList& RHICmdList);

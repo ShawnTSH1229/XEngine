@@ -1,6 +1,5 @@
 #include "DeferredShadingRenderer.h"
 #include "VirtualShadowMap.h"
-#include "ShadowMap_Old.h"
 
 void XDeferredShadingRenderer::SceneTagetGen()
 {
@@ -36,10 +35,6 @@ void XDeferredShadingRenderer::SceneTagetGen()
 		, nullptr);
 
 	SceneTargets.TextureDepthStencil = RHICreateTexture2D(RViewInfo.ViewWidth, RViewInfo.ViewHeight, 1, false, false,
-		EPixelFormat::FT_R24G8_TYPELESS, ETextureCreateFlags(TexCreate_DepthStencilTargetable | TexCreate_ShaderResource)
-		, 1, nullptr);
-
-	SceneTargets.TempShadowDepthTexture = RHICreateTexture2D(ShadowMapDepthTextureSize, ShadowMapDepthTextureSize, 1, false, false,
 		EPixelFormat::FT_R24G8_TYPELESS, ETextureCreateFlags(TexCreate_DepthStencilTargetable | TexCreate_ShaderResource)
 		, 1, nullptr);
 

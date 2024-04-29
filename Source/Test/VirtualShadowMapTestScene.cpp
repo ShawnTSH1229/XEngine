@@ -1,20 +1,74 @@
 #include "TestSceneCreate.h"
-void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos)
+#include "Runtime/Render/VirtualShadowMap.h"
+
+void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XBoundSphere& BoundSphere)
 {
+    float VSM_MAX_MIP_RESOLUTION = int(VSM_MIP0_RESOLUTION) << VSM_MIP_NUM;
+    XVector3 BoundMin(-VSM_MAX_MIP_RESOLUTION * 0.5, -10, -VSM_MAX_MIP_RESOLUTION * 0.5);
+    XVector3 BoundMax(+VSM_MAX_MIP_RESOLUTION * 0.5, +10, +VSM_MAX_MIP_RESOLUTION * 0.5);
+    
+    BoundSphere.Center = (BoundMin + BoundMax) * 0.5;
+    BoundSphere.Radius = XVector3(BoundMax - BoundSphere.Center).Length();
+
     std::shared_ptr<GGeomertry> DefaultCube = TempCreateCubeGeoWithMat();
-    DefaultCube->SetWorldTranslate(XVector3(-1, 1.5, 0));
+    std::shared_ptr<GGeomertry> DefaultQuad = TempCreateQuadGeoWithMat();
+
     DefaultCube->GetMaterialInstance()->SetMaterialValueFloat("ConstantMetatllic", 0.8);
     DefaultCube->GetMaterialInstance()->SetMaterialValueFloat("ConstantRoughness", 0.6);
 
-    std::shared_ptr<GGeomertry> DefaultCubeRight = DefaultCube->CreateGeoInstancewithMat();
-    DefaultCubeRight->SetWorldTranslate(XVector3(1, 1.5, 0));
+    {
+        float Mip0CubeNumPerDimension = VSM_TILE_NUM_XY * 2.0;
+        float Mip0Stride = VSM_MIP0_RESOLUTION / Mip0CubeNumPerDimension;
+        for (int Mip0X = 0; Mip0X < Mip0CubeNumPerDimension; Mip0X++)
+        {
+            for (int Mip0Z = 0; Mip0Z < Mip0CubeNumPerDimension; Mip0Z++)
+            {
+                std::shared_ptr<GGeomertry> CubeInstance = DefaultCube->CreateGeoInstancewithMat();
+                std::shared_ptr<GGeomertry> QuadInstance = DefaultQuad->CreateGeoInstancewithMat();
+                float XPos = Mip0X * Mip0Stride + (-VSM_MIP0_RESOLUTION * 0.5);
+                float ZPos = Mip0Z * Mip0Stride + (-VSM_MIP0_RESOLUTION * 0.5);
+                CubeInstance->SetWorldTranslate(XVector3(XPos, 1.0, ZPos));
+                QuadInstance->SetWorldTranslate(XVector3(XPos, 0, ZPos));
+                QuadInstance->SetWorldScale(XVector3(0.25, 0.25, 0.25));
+                RenderGeos.push_back(CubeInstance);
+                RenderGeos.push_back(QuadInstance);
+            }
+        }
+    }
 
-    std::shared_ptr<GGeomertry> DefaultQuad = TempCreateQuadGeoWithMat();
-    DefaultQuad->SetWorldTranslate(XVector3(0.0, 1.0, 0.0));
+    for (int MipIndex = 1; MipIndex < VSM_MIP_NUM; MipIndex++)
+    {
+        float MipCubeNumPerDimension = VSM_TILE_NUM_XY * 2.0;
+        
+        float PreMipRange = int(VSM_MIP0_RESOLUTION) << (MipIndex - 1);
+        float CurrentMipRange = int(VSM_MIP0_RESOLUTION) << MipIndex;
+       
+        float MipStride = CurrentMipRange / MipCubeNumPerDimension;
+    
+        for (int MipX = 0; MipX < MipCubeNumPerDimension; MipX++)
+        {
+            for (int MipZ = 0; MipZ < MipCubeNumPerDimension; MipZ++)
+            {
+                std::shared_ptr<GGeomertry> CubeInstance = DefaultCube->CreateGeoInstancewithMat();
+                std::shared_ptr<GGeomertry> QuadInstance = DefaultQuad->CreateGeoInstancewithMat();
+                float XPos = MipX * MipStride + (-CurrentMipRange * 0.5);
+                float ZPos = MipZ * MipStride + (-CurrentMipRange * 0.5);
+                if (!((std::abs(XPos) < PreMipRange * 0.5) && (std::abs(ZPos) < PreMipRange * 0.5)))
+                {
+                    CubeInstance->SetWorldTranslate(XVector3(XPos, 1.0, ZPos));
+                    QuadInstance->SetWorldTranslate(XVector3(XPos, 0, ZPos));
+                    QuadInstance->SetWorldScale(XVector3(0.25, 0.25, 0.25));
+                    RenderGeos.push_back(CubeInstance);
+                    RenderGeos.push_back(QuadInstance);
+                }
+            }
+        }
+    }
 
-    RenderGeos.push_back(DefaultCube);
-    RenderGeos.push_back(DefaultCubeRight);
-    RenderGeos.push_back(DefaultQuad);
+    std::shared_ptr<GGeomertry> CenterCube = DefaultCube->CreateGeoInstancewithMat();
+    CenterCube->SetWorldTranslate(XVector3(1, 1.5, 0));
+
+    RenderGeos.push_back(CenterCube);
 
     for (auto& t : RenderGeos)
     {
