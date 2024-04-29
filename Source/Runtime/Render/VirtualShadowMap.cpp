@@ -7,14 +7,9 @@
 
 #include "VirtualShadowMap.h"
 
-struct VSMTileMaskStruct
+__declspec(align(256)) struct VSMTileMaskStruct
 {
 	XMatrix LighgViewProject;
-
-	float ClientWidth;
-	float ClientHeight;
-	float padding0;
-	float padding1;
 };
 
 struct TiledInfoStruct
@@ -121,7 +116,7 @@ public:
 };
 
 VSMTileMaskCS::ShaderInfos VSMTileMaskCS::StaticShaderInfos(
-	"VSMTileMaskCS", GET_SHADER_PATH("VSMTileMaskCS.hlsl"),
+	"VSMTileMaskCS", GET_SHADER_PATH("VirtualShadowMapTileMarking.hlsl"),
 	"VSMTileMaskCS", EShaderType::SV_Compute, VSMTileMaskCS::CustomConstrucFunc,
 	VSMTileMaskCS::ModifyShaderCompileSettings);
 
@@ -198,8 +193,6 @@ void XDeferredShadingRenderer::VSMUpdate()
 {
 	VSMTileMaskStruct TileMaskStructIns;
 	TileMaskStructIns.LighgViewProject = LightViewProjMat;
-	TileMaskStructIns.ClientWidth = RViewInfo.ViewWidth;
-	TileMaskStructIns.ClientHeight = RViewInfo.ViewHeight;
 
 	VirtualShadowMapResourece.VSMTileMaskConstantBuffer->UpdateData(&TileMaskStructIns, sizeof(VSMTileMaskStruct), 0);
 

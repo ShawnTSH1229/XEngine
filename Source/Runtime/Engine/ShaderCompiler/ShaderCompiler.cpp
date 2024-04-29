@@ -15,7 +15,7 @@ static const std::filesystem::path ShaderASMPath(CACHE_PATH);
 //https://docs.microsoft.com/en-us/windows/win32/direct3dtools/dx-graphics-tools-fxc-syntax
 
 #define CACHE_SHADER 0
-#define USE_DXC 1
+#define USE_DXC 0
 
 #if !USE_DXC
 class XD3DInclude : public ID3DInclude
