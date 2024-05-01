@@ -33,8 +33,6 @@ public:
 		BoundingBox.Extent = Extent;
 	}
 
-
-
 	inline XTransform& GetWorldTransform()
 	{
 		return WorldTransform;

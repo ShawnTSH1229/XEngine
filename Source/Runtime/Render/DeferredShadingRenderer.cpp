@@ -133,7 +133,6 @@ void XDeferredShadingRenderer::Setup(
 void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 {
 	SkyAtmosPhereUpdata(RHICmdList);
-
 	RHICmdList.RHIBeginFrame();
 
 #if USE_SVOGI
@@ -145,6 +144,9 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 		PreDepthPassRendering(RHICmdList);
 		HZBPass(RHICmdList);
 	}
+
+	
+
 	{
 		VSMUpdate_Deprecated();
 		VSMTileMaskPass_Deprecated(RHICmdList);

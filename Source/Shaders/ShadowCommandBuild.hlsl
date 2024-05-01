@@ -2,7 +2,7 @@ struct SceneConstantBuffer
 {
     row_major float4x4 gWorld;
     float3 BoundingBoxCenter;//BoundingBox in World  Space
-    float a;
+    uint isDynamicObejct;
     float3 BoundingBoxExtent;
     float b;
 };

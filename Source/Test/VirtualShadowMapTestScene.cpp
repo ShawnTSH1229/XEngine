@@ -1,9 +1,9 @@
 #include "TestSceneCreate.h"
-#include "Runtime/Render/VirtualShadowMap.h"
+#include "Runtime/Render/VirtualShadowMapArray.h"
 
 void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XBoundSphere& BoundSphere)
 {
-    float VSM_MAX_MIP_RESOLUTION = int(VSM_MIP0_RESOLUTION) << VSM_MIP_NUM;
+    float VSM_MAX_MIP_RESOLUTION = int(VSM_MIN_LEVEL_DISTANCE) << VSM_MIP_NUM;
     XVector3 BoundMin(-VSM_MAX_MIP_RESOLUTION * 0.5, -10, -VSM_MAX_MIP_RESOLUTION * 0.5);
     XVector3 BoundMax(+VSM_MAX_MIP_RESOLUTION * 0.5, +10, +VSM_MAX_MIP_RESOLUTION * 0.5);
     
@@ -15,18 +15,22 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
 
     DefaultCube->GetMaterialInstance()->SetMaterialValueFloat("ConstantMetatllic", 0.8);
     DefaultCube->GetMaterialInstance()->SetMaterialValueFloat("ConstantRoughness", 0.6);
+    std::shared_ptr<GGeomertry> CenterCube = DefaultCube->CreateGeoInstancewithMat();
+    CenterCube->SetWorldTranslate(XVector3(1, 1.5, 0));
+    RenderGeos.push_back(CenterCube);
+
 
     {
-        float Mip0CubeNumPerDimension = VSM_TILE_NUM_XY * 2.0;
-        float Mip0Stride = VSM_MIP0_RESOLUTION / Mip0CubeNumPerDimension;
+        float Mip0CubeNumPerDimension = VSM_TILE_MAX_MIP_NUM_XY;
+        float Mip0Stride = VSM_MIN_LEVEL_DISTANCE / Mip0CubeNumPerDimension;
         for (int Mip0X = 0; Mip0X < Mip0CubeNumPerDimension; Mip0X++)
         {
             for (int Mip0Z = 0; Mip0Z < Mip0CubeNumPerDimension; Mip0Z++)
             {
                 std::shared_ptr<GGeomertry> CubeInstance = DefaultCube->CreateGeoInstancewithMat();
                 std::shared_ptr<GGeomertry> QuadInstance = DefaultQuad->CreateGeoInstancewithMat();
-                float XPos = Mip0X * Mip0Stride + (-VSM_MIP0_RESOLUTION * 0.5);
-                float ZPos = Mip0Z * Mip0Stride + (-VSM_MIP0_RESOLUTION * 0.5);
+                float XPos = Mip0X * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE * 0.5);
+                float ZPos = Mip0Z * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE * 0.5);
                 CubeInstance->SetWorldTranslate(XVector3(XPos, 1.0, ZPos));
                 QuadInstance->SetWorldTranslate(XVector3(XPos, 0, ZPos));
                 QuadInstance->SetWorldScale(XVector3(0.25, 0.25, 0.25));
@@ -38,10 +42,10 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
 
     for (int MipIndex = 1; MipIndex < VSM_MIP_NUM; MipIndex++)
     {
-        float MipCubeNumPerDimension = VSM_TILE_NUM_XY * 2.0;
+        float MipCubeNumPerDimension = VSM_TILE_MAX_MIP_NUM_XY;
         
-        float PreMipRange = int(VSM_MIP0_RESOLUTION) << (MipIndex - 1);
-        float CurrentMipRange = int(VSM_MIP0_RESOLUTION) << MipIndex;
+        float PreMipRange = int(VSM_MIN_LEVEL_DISTANCE) << (MipIndex - 1);
+        float CurrentMipRange = int(VSM_MIN_LEVEL_DISTANCE) << MipIndex;
        
         float MipStride = CurrentMipRange / MipCubeNumPerDimension;
     
@@ -65,10 +69,7 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
         }
     }
 
-    std::shared_ptr<GGeomertry> CenterCube = DefaultCube->CreateGeoInstancewithMat();
-    CenterCube->SetWorldTranslate(XVector3(1, 1.5, 0));
 
-    RenderGeos.push_back(CenterCube);
 
     for (auto& t : RenderGeos)
     {

@@ -6,21 +6,19 @@
 // clear virtual shadow map tile state
 // add tile state visualize pass
 
-cbuffer CBShadowViewInfo
+Texture2D SceneDepthTextureInput;
+RWBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
+
+cbuffer cbShadowViewInfo
 {
     row_major float4x4 LightViewProjectMatrix;
     float3 WorldCameraPosition;
 };
 
-Texture2D SceneDepthTexture;
-RWBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
-
-
-
 [numthreads(16, 16, 1)]
 void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
 {
-    float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID,0));
+    float DeviceZ = SceneDepthTextureInput.Load(int3(DispatchThreadID,0));
     float2 UV = DispatchThreadID * View_BufferSizeAndInvSize.zw;
     
     if(DeviceZ == 0.0 || UV.x > 1.0f || UV.y > 1.0f)

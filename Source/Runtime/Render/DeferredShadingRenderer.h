@@ -55,6 +55,12 @@ public:
 	void PreDepthPassGPUCulling(XRHICommandList& RHICmdList);
 	void PreDepthPassRendering(XRHICommandList& RHICmdList);
 
+	// Virtual Shadow Map
+	void VirutalShadowMapSetup();
+	void VirtualShadowMapUpdate();
+	void VirtualShadowMapRendering();
+	void VirtualShadowMapVisualize();
+
 	//Virtual Shadow Map Generate
 	void VSMSetup_Deprecated();
 	void VSMUpdate_Deprecated();
