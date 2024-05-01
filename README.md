@@ -2,6 +2,8 @@
 
 ![XEngine](/Resource/Logo.jpg?raw=true "XEngine")
 
+[Previous deprecated repository](https://github.com/lvcheng1229/XEnigine). 
+
 ## Getting Started
 
 Visual Studio 2019 or 2022 is recommended, XEngine is only tested on Windows.
