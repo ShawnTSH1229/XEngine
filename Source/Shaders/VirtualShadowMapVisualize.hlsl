@@ -6,21 +6,19 @@
 // clear virtual shadow map tile state
 // add tile state visualize pass
 
-cbuffer CBShadowViewInfo
+cbuffer CbShadowViewInfo
 {
     row_major float4x4 LightViewProjectMatrix;
     float3 WorldCameraPosition;
 };
 
 Texture2D SceneDepthTexture;
-RWBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
-
-
+RWTexture2D<float4> OutputVisualizeTexture; // 32 * 32 + 16 * 16 + 8 * 8
 
 [numthreads(16, 16, 1)]
-void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
+void VSMVisualizeCS(uint2 DispatchThreadID :SV_DispatchThreadID)
 {
-    float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID,0));
+    float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID.xy,0));
     float2 UV = DispatchThreadID * View_BufferSizeAndInvSize.zw;
     
     if(DeviceZ == 0.0 || UV.x > 1.0f || UV.y > 1.0f)
@@ -42,13 +40,24 @@ void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
     UVOut.y *=- 1.0;
     UVOut = UVOut* 0.5 + 0.5f;
 
-    float Distance = length(WorldCameraPosition - WorldPosition);
+    float Distance = length(WorldCameraPosition - WorldPosition.xyz);
     float Log2Distance = log2(Distance + 1);
     
     int MipLevel = clamp(Log2Distance - VSM_CLIPMAP_MIN_LEVEL, 0, VSM_MIP_NUM - 1);
     uint2 VSMTileIndex = uint2(UVOut * MipLevelSize[MipLevel]);
 
-    int DestTileInfoIndex = MipLevelOffset[MipLevel] + VSMTileIndex.y * MipLevelSize[MipLevel] + VSMTileIndex.x;
-
-    VirtualShadowMapTileState[DestTileInfoIndex] = TILE_STATE_USED;
+    float3 VisualizeColor = 0;
+    if(MipLevel == 0)
+    {
+        VisualizeColor.x = 1.0;
+    }
+    else if(MipLevel == 1)
+    {
+        VisualizeColor.y = 1.0;
+    }
+    else if(MipLevel == 2)
+    {
+        VisualizeColor.z = 1.0;
+    }
+    OutputVisualizeTexture[DispatchThreadID] = float4(VisualizeColor.xyz,1.0);
 }

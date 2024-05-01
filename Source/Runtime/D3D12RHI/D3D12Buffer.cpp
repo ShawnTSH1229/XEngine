@@ -224,8 +224,6 @@ XD3D12UnorderedAcessView* XD3D12AbstractDevice::RHICreateUnorderedAccessView(XRH
 	XD3D12UnorderedAcessView* UnorderedAcessView = new  XD3D12UnorderedAcessView();
 	UnorderedAcessView->Create(PhysicalDevice, D3D12Resource, D3D12Resource, uavDesc, CPU_PTR, GPU_PTR);
 	
-	XASSERT(bUseUAVCounter == true);
-	XASSERT(bAppendBuffer == true);
 	return UnorderedAcessView;
 }
 std::shared_ptr<XRHIUnorderedAcessView> XD3D12PlatformRHI::RHICreateUnorderedAccessView(XRHIStructBuffer* StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer, uint64 CounterOffsetInBytes)

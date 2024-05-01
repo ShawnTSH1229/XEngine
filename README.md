@@ -2,7 +2,7 @@
 
 ![XEngine](/Resource/Logo.jpg?raw=true "XEngine")
 
-[Previous deprecated repository](https://github.com/lvcheng1229/XEnigine). 
+[previous deprecated repository](https://github.com/lvcheng1229/XEnigine). 
 
 ## Getting Started
 

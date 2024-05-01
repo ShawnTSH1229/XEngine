@@ -1,12 +1,15 @@
 #pragma once
 #include "Runtime/RHI/RHICommandList.h"
+#include "Runtime/Core/Misc/Path.h"
 #include "Runtime/Engine/SceneView.h"
-#include "Runtime/RenderCore/VertexFactory.h"
 #include "Runtime/Render/SceneRendering.h"
+#include "Runtime/RenderCore/VertexFactory.h"
+
+#include "VirtualShadowMapArray.h"
 #include "PreDepthPassGPUCulling.h"
 #include "SceneRenderTagrget.h"
 #include "SkyAtmosPhere.h"
-#include "Runtime/Core/Misc/Path.h"
+
 //!!!!!!!!!
 #include "Editor/EditorUI.h"
 
@@ -58,8 +61,9 @@ public:
 	// Virtual Shadow Map
 	void VirutalShadowMapSetup();
 	void VirtualShadowMapUpdate();
-	void VirtualShadowMapRendering();
-	void VirtualShadowMapVisualize();
+	void VirtualShadowMapRendering(XRHICommandList& RHICmdList);
+	void VirtualShadowMapTileMark(XRHICommandList& RHICmdList);
+	void VirtualShadowMapVisualize(XRHICommandList& RHICmdList);
 
 	//Virtual Shadow Map Generate
 	void VSMSetup_Deprecated();
@@ -69,6 +73,7 @@ public:
 	void VSMPageTableGen_Deprecated(XRHICommandList& RHICmdList);
 	void VSMShadowCommandBuild_Deprecated(XRHICommandList& RHICmdList);
 	void VirtualShadowMapGen_Deprecated(XRHICommandList& RHICmdList);
+	void VSMTileMaskClear_Deprecated(XRHICommandList& RHICmdList);
 
 	//HZBPass
 	void HZBPass(XRHICommandList& RHICmdList);
@@ -82,7 +87,6 @@ public:
 
 	//Shadow Mask Generate
 	void ShadowMaskGenerate(XRHICommandList& RHICmdList);
-	void VSMTileMaskClear(XRHICommandList& RHICmdList);
 
 	//LightPass
 	void LightPass(XRHICommandList& RHICmdList);

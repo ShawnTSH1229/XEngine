@@ -116,7 +116,7 @@ public:
 };
 
 VSMTileMaskCS::ShaderInfos VSMTileMaskCS::StaticShaderInfos(
-	"VSMTileMaskCS", GET_SHADER_PATH("VirtualShadowMapTileMarking.hlsl"),
+	"VSMTileMaskCS", GET_SHADER_PATH("VSMTileMaskCS.hlsl"),
 	"VSMTileMaskCS", EShaderType::SV_Compute, VSMTileMaskCS::CustomConstrucFunc,
 	VSMTileMaskCS::ModifyShaderCompileSettings);
 
@@ -451,7 +451,7 @@ VSMTileMaskClearCS::ShaderInfos VSMTileMaskClearCS::StaticShaderInfos(
 	"VSMTileMaskClearCS", EShaderType::SV_Compute, VSMTileMaskClearCS::CustomConstrucFunc,
 	VSMTileMaskClearCS::ModifyShaderCompileSettings);
 
-void XDeferredShadingRenderer::VSMTileMaskClear(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::VSMTileMaskClear_Deprecated(XRHICommandList& RHICmdList)
 {
 	RHICmdList.RHIEventBegin(1, "VSMTileMaskClearCS", sizeof("VSMTileMaskClearCS"));
 	TShaderReference<VSMTileMaskClearCS> Shader = GetGlobalShaderMapping()->GetShader<VSMTileMaskClearCS>();

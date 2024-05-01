@@ -222,7 +222,8 @@ static void CompileDX12Shader(XShaderCompileInput& Input, XShaderCompileOutput& 
 			}
 			else if (
 				ResourceType == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_RWTYPED || 
-				ResourceType == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_APPEND_STRUCTURED || 
+				ResourceType == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_APPEND_STRUCTURED ||
+				ResourceType == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_RWSTRUCTURED ||
 				ResourceType == D3D_SHADER_INPUT_TYPE::D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER)
 			{
 				NumUAVCount++;

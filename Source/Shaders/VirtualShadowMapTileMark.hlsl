@@ -6,19 +6,19 @@
 // clear virtual shadow map tile state
 // add tile state visualize pass
 
-Texture2D SceneDepthTextureInput;
-RWBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
-
-cbuffer cbShadowViewInfo
+cbuffer CbShadowViewInfo
 {
     row_major float4x4 LightViewProjectMatrix;
     float3 WorldCameraPosition;
 };
 
+Texture2D SceneDepthTexture;
+RWStructuredBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
+
 [numthreads(16, 16, 1)]
 void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
 {
-    float DeviceZ = SceneDepthTextureInput.Load(int3(DispatchThreadID,0));
+    float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID.xy,0));
     float2 UV = DispatchThreadID * View_BufferSizeAndInvSize.zw;
     
     if(DeviceZ == 0.0 || UV.x > 1.0f || UV.y > 1.0f)
@@ -40,7 +40,7 @@ void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
     UVOut.y *=- 1.0;
     UVOut = UVOut* 0.5 + 0.5f;
 
-    float Distance = length(WorldCameraPosition - WorldPosition);
+    float Distance = length(WorldCameraPosition - WorldPosition.xyz);
     float Log2Distance = log2(Distance + 1);
     
     int MipLevel = clamp(Log2Distance - VSM_CLIPMAP_MIN_LEVEL, 0, VSM_MIP_NUM - 1);

@@ -133,6 +133,11 @@ void XDeferredShadingRenderer::Setup(
 void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 {
 	SkyAtmosPhereUpdata(RHICmdList);
+
+	{
+		VirtualShadowMapUpdate();
+	}
+
 	RHICmdList.RHIBeginFrame();
 
 #if USE_SVOGI
@@ -145,7 +150,9 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 		HZBPass(RHICmdList);
 	}
 
-	
+	{
+		VirtualShadowMapRendering(RHICmdList);
+	}
 
 	{
 		VSMUpdate_Deprecated();
@@ -161,9 +168,15 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 	SkyAtmosPhereRendering(RHICmdList);
 	BasePassRendering(RHICmdList);
 	ShadowMaskGenerate(RHICmdList);
-	VSMTileMaskClear(RHICmdList);
+	{
+		VSMTileMaskClear_Deprecated(RHICmdList);
+	}
+
 	LightPass(RHICmdList);
 	SkyAtmoSphereCombine(RHICmdList);
+	{
+		VirtualShadowMapVisualize(RHICmdList);
+	}
 #if USE_SVOGI
 	ConeTracingPass(RHICmdList, SceneTargets.TextureSceneColorDeffered.get());
 #endif

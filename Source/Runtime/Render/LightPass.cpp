@@ -50,15 +50,15 @@ public:
 	XLightPassPS(const XShaderInitlizer& Initializer)
 		:XGloablShader(Initializer)
 	{
-		CBV_View.Bind(Initializer.ShaderParameterMap, "cbView");
+		//CBV_View.Bind(Initializer.ShaderParameterMap, "cbView");
 		CBV_DefferedLight.Bind(Initializer.ShaderParameterMap, "cbLightPass");
 
 		GBufferATexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferATexture");
 		GBufferBTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferBTexture");
 		GBufferCTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferCTexture");
-		GBufferDTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferDTexture");
+		//GBufferDTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferDTexture");
 		SceneDepthTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_SceneDepthTexture");
-		ShadowMakTex.Bind(Initializer.ShaderParameterMap, "ShadowMaskTex");
+		//ShadowMakTex.Bind(Initializer.ShaderParameterMap, "ShadowMaskTex");
 	}
 
 	void SetParameter(
@@ -73,26 +73,26 @@ public:
 		XRHITexture* InSceneDepthTexture,
 		XRHITexture* InLightAttenuationTexture)
 	{
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, CBV_View, InCBV_View);
+		//SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, CBV_View, InCBV_View);
 		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, CBV_DefferedLight, InCBV_DefferedLight);
 
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferATexture, InGBufferATexture);
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferBTexture, InGBufferBTexture);
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferCTexture, InGBufferCTexture);
-		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferDTexture, InGBufferDTexture);
+		//SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferDTexture, InGBufferDTexture);
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SceneDepthTexture, InSceneDepthTexture);
-		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, ShadowMakTex, InLightAttenuationTexture);
+		//SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, ShadowMakTex, InLightAttenuationTexture);
 	}
 
-	CBVParameterType CBV_View;
+	//CBVParameterType CBV_View;
 	CBVParameterType CBV_DefferedLight;
 
 	TextureParameterType GBufferATexture;
 	TextureParameterType GBufferBTexture;
 	TextureParameterType GBufferCTexture;
-	TextureParameterType GBufferDTexture;
+	//TextureParameterType GBufferDTexture;
 	TextureParameterType SceneDepthTexture;
-	TextureParameterType ShadowMakTex;
+	//TextureParameterType ShadowMakTex;
 
 };
 

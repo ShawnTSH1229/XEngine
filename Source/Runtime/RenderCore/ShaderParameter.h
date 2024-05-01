@@ -48,7 +48,8 @@ public:
 			ResourceNum = iter->second.ResourceCount;
 			return;
 		}
-		XASSERT_TEMP(false);
+		XASSERT(false);
+		//XASSERT_TEMP(false);
 	}
 	uint16 GetResourceIndex()const { return ResourceIndex; }
 	uint16 GetResourceNum()const { return ResourceNum; };
