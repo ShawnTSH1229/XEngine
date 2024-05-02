@@ -267,10 +267,10 @@ public:
 	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters)
 	{
 		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, ShaderParameters.VirtualShadowMapTileState);
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, ShaderParameters.VirtualShadowMapTileStateCacheMiss);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileStateCacheMiss, ShaderParameters.VirtualShadowMapTileStateCacheMiss);
 
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, ShaderParameters.VirtualShadowMapPreTileState);
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, ShaderParameters.VirtualShadowMapPreTileTable);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapPreTileState, ShaderParameters.VirtualShadowMapPreTileState);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapPreTileTable, ShaderParameters.VirtualShadowMapPreTileTable);
 
 		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
 		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileAction, ShaderParameters.VirtualShadowMapTileAction);
@@ -303,6 +303,20 @@ public:
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
 
 public:
+	struct SParameters
+	{
+		XRHIConstantBuffer* CbVisualizeParameters;
+		XRHIConstantBuffer* CBView;
+		XRHIConstantBuffer* CBShadowViewInfo;
+
+		XRHIShaderResourceView* VirtualShadowMapTileState;
+		XRHIShaderResourceView* VirtualShadowMapTileStateCacheMiss;
+		XRHIShaderResourceView* VirtualShadowMapTileAction;
+
+		XRHITexture* SceneDepthTexture;
+		XRHIUnorderedAcessView* OutputVisualizeTexture;
+	};
+
 	XVirtualShadowMapVisualize(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
 	{
 		CbVisualizeParameters.Bind(Initializer.ShaderParameterMap, "CbVisualizeParameters");
@@ -311,25 +325,33 @@ public:
 		SceneDepthTexture.Bind(Initializer.ShaderParameterMap, "SceneDepthTexture");
 		VirtualShadowMapTileState.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileState");
 		VirtualShadowMapTileStateCacheMiss.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileStateCacheMiss");
+		VirtualShadowMapTileAction.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileAction");
 		OutputVisualizeTexture.Bind(Initializer.ShaderParameterMap, "OutputVisualizeTexture");
 	}
 
-	void SetParameters(XRHICommandList& RHICommandList, XRHIConstantBuffer* InputVisualizeParameters, XRHIConstantBuffer* InputSceneViewBuffer, XRHIConstantBuffer* InputShadowViewInfoBuffer, XRHIShaderResourceView* InputTileStateSRV, XRHIShaderResourceView* InputTileCacheMissStateSRV, XRHIUnorderedAcessView* InputVisualizeTexture, XRHITexture* InputSceneDepthTexture)
+	void SetParameters(XRHICommandList& RHICommandList, SParameters Parameters)
 	{
-		SetTextureParameter(RHICommandList, EShaderType::SV_Compute, SceneDepthTexture, InputSceneDepthTexture);
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CbVisualizeParameters, InputVisualizeParameters);
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CBView, InputSceneViewBuffer);
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CBShadowViewInfo, InputShadowViewInfoBuffer);
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, InputTileStateSRV);
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileStateCacheMiss, InputTileCacheMissStateSRV);
-		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, OutputVisualizeTexture, InputVisualizeTexture);
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CbVisualizeParameters, Parameters.CbVisualizeParameters);
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CBView, Parameters.CBView);
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CBShadowViewInfo, Parameters.CBShadowViewInfo);
+
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, Parameters.VirtualShadowMapTileState);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileStateCacheMiss, Parameters.VirtualShadowMapTileStateCacheMiss);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileAction, Parameters.VirtualShadowMapTileAction);
+
+		SetTextureParameter(RHICommandList, EShaderType::SV_Compute, SceneDepthTexture, Parameters.SceneDepthTexture);
+
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, OutputVisualizeTexture, Parameters.OutputVisualizeTexture);
 	}
 
 	CBVParameterType CbVisualizeParameters;
 	CBVParameterType CBView;
 	CBVParameterType CBShadowViewInfo;
+	
 	SRVParameterType VirtualShadowMapTileState;
 	SRVParameterType VirtualShadowMapTileStateCacheMiss;
+	SRVParameterType VirtualShadowMapTileAction;
+
 	TextureParameterType SceneDepthTexture;
 	UAVParameterType OutputVisualizeTexture;
 };
@@ -391,6 +413,7 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 
 
 	VirtualShadowMapTileMark(RHICmdList);
+	VirtualShadowMapUpdateTileAction(RHICmdList);
 }
 
 void XDeferredShadingRenderer::VirtualShadowMapTileMark(XRHICommandList& RHICmdList)
@@ -416,6 +439,23 @@ void XDeferredShadingRenderer::VirtualShadowMapTileMark(XRHICommandList& RHICmdL
 
 void XDeferredShadingRenderer::VirtualShadowMapUpdateTileAction(XRHICommandList& RHICmdList)
 {
+	RHICmdList.RHIEventBegin(1, "VSMUpdateTileActionCS", sizeof("VSMUpdateTileActionCS"));
+	TShaderReference<XVirtualShadowMapUpdateTileAction> VSMUpdateTileActionCS = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapUpdateTileAction>();
+	SetComputePipelineStateFromCS(RHICmdList, VSMUpdateTileActionCS.GetComputeShader());
+
+	XVirtualShadowMapUpdateTileAction::SParameters Parameters;
+	Parameters.VirtualShadowMapTileState = VirtualShadowMapResource.GetVSMTileStateSRV(false);
+	Parameters.VirtualShadowMapTileStateCacheMiss = VirtualShadowMapResource.VirtualShadowMapTileStateCacheMissSRV.get();
+	
+	Parameters.VirtualShadowMapPreTileState = VirtualShadowMapResource.GetVSMTileStateSRV(true);
+	Parameters.VirtualShadowMapPreTileTable = VirtualShadowMapResource.GetVSMTileTableSRV(true);
+
+	Parameters.VirtualShadowMapTileTable = VirtualShadowMapResource.GetVSMTileTableUAV(false);
+	Parameters.VirtualShadowMapTileAction = VirtualShadowMapResource.VirtualShadowMapTileActionUAV.get();
+
+	VSMUpdateTileActionCS->SetParameters(RHICmdList, Parameters);
+	RHICmdList.RHIDispatchComputeShader(21, 1, 1);
+	RHICmdList.RHIEventEnd();
 }
 
 void XDeferredShadingRenderer::VirtualShadowMapVisualize(XRHICommandList& RHICmdList)
@@ -423,20 +463,26 @@ void XDeferredShadingRenderer::VirtualShadowMapVisualize(XRHICommandList& RHICmd
 	XRHITexture* TextureSceneColor = SceneTargets.TextureSceneColorDeffered.get();
 
 	SVSMVisualizeParameters VSMVisualizeParameters;
-	VSMVisualizeParameters.VisualizeType = 1;
+	VSMVisualizeParameters.VisualizeType = 2;
 	VirtualShadowMapResource.VSMVisualizeParameters->UpdateData(&VSMVisualizeParameters, sizeof(SVSMVisualizeParameters), 0);
 	
 	RHICmdList.RHIEventBegin(1, "VSMVisualizeCS", sizeof("VSMVisualizeCS"));
 	TShaderReference<XVirtualShadowMapVisualize> VSMVisualizeCS = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapVisualize>();
 	SetComputePipelineStateFromCS(RHICmdList, VSMVisualizeCS.GetComputeShader());
-	VSMVisualizeCS->SetParameters(
-		RHICmdList, 
-		VirtualShadowMapResource.VSMVisualizeParameters.get(),
-		RViewInfo.ViewConstantBuffer.get(),
-		VirtualShadowMapResource.VSMTileShadowViewConstantBuffer.get(),
-		VirtualShadowMapResource.GetVSMTileStateSRV(false),
-		VirtualShadowMapResource.VirtualShadowMapTileStateCacheMissSRV.get(),
-		GetRHIUAVFromTexture(TextureSceneColor), SceneTargets.TextureDepthStencil.get());
+
+	XVirtualShadowMapVisualize::SParameters Parameters;
+	Parameters.CbVisualizeParameters = VirtualShadowMapResource.VSMVisualizeParameters.get();
+	Parameters.CBView = RViewInfo.ViewConstantBuffer.get();
+	Parameters.CBShadowViewInfo = VirtualShadowMapResource.VSMTileShadowViewConstantBuffer.get();
+
+	Parameters.VirtualShadowMapTileState = VirtualShadowMapResource.GetVSMTileStateSRV(false);
+	Parameters.VirtualShadowMapTileStateCacheMiss = VirtualShadowMapResource.VirtualShadowMapTileStateCacheMissSRV.get();
+	Parameters.VirtualShadowMapTileAction = VirtualShadowMapResource.VirtualShadowMapTileActionSRV.get();
+
+	Parameters.OutputVisualizeTexture = GetRHIUAVFromTexture(TextureSceneColor);
+	Parameters.SceneDepthTexture = SceneTargets.TextureDepthStencil.get();
+
+	VSMVisualizeCS->SetParameters(RHICmdList, Parameters);
 	RHICmdList.RHIDispatchComputeShader(static_cast<uint32>((RViewInfo.ViewWidth + 15) / 16), static_cast<uint32>((RViewInfo.ViewHeight + 15) / 16), 1);
 	RHICmdList.RHIEventEnd();
 }

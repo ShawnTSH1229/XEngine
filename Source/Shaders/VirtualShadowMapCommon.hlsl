@@ -14,7 +14,7 @@
 #define TILE_ACTION_NONE 0
 #define TILE_ACTION_NEED_UPDATE 1
 #define TILE_ACTION_NEED_REMOVE 2
-#define TILE_ACTION_NEED_CACHED 4
+#define TILE_ACTION_CACHED 4
 
 struct SShadowViewInfo
 {
@@ -34,7 +34,7 @@ static float4 BoundingBoxOffset[8] =
 };
 
 static const uint MipLevelGroupStart[3] = {0, 16, 4 + 16};
-static const uint MipLevelGroupOffset[3] = {0, 16 * VSM_TILE_MAX_MIP_NUM_XY * VSM_TILE_MAX_MIP_NUM_XY , (4 * 16) * VSM_TILE_MAX_MIP_NUM_XY * VSM_TILE_MAX_MIP_NUM_XY};
+static const uint MipLevelGroupOffset[3] = {0, 16 * VSM_TILE_MAX_MIP_NUM_XY * VSM_TILE_MAX_MIP_NUM_XY , (4 + 16) * VSM_TILE_MAX_MIP_NUM_XY * VSM_TILE_MAX_MIP_NUM_XY};
 
 static const uint MipLevelOffset[3] = {0,32 * 32, 32 * 32 + 16 * 16};
 static const uint MipLevelSize[3] = {32,16,8};

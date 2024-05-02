@@ -22,6 +22,8 @@ cbuffer CbVisualizeParameters
 Texture2D SceneDepthTexture;
 StructuredBuffer<uint> VirtualShadowMapTileState;
 StructuredBuffer<uint> VirtualShadowMapTileStateCacheMiss;
+StructuredBuffer<uint> VirtualShadowMapTileAction;
+
 RWTexture2D<float4> OutputVisualizeTexture; // 32 * 32 + 16 * 16 + 8 * 8
 
 void VisualizeTileState(uint2 TileIndex,uint MipLevel, in out float3 VisualizeColor)
@@ -37,6 +39,36 @@ void VisualizeTileState(uint2 TileIndex,uint MipLevel, in out float3 VisualizeCo
         {
             VisualizeColor.y = 1.0;
         }
+   }
+   else
+   {
+       if((TileIndex.x % 2) == (TileIndex.y % 2))
+       {
+           VisualizeColor.z = 1.0;
+       }
+       else
+       {
+           VisualizeColor.z = 0.5;
+       }
+   }
+}
+
+void VisualizeTileAction(uint2 TileIndex,uint MipLevel, in out float3 VisualizeColor)
+{
+   int DestTileInfoIndex = MipLevelOffset[MipLevel] + TileIndex.y * MipLevelSize[MipLevel] + TileIndex.x;
+   uint TileAction = VirtualShadowMapTileAction[DestTileInfoIndex];
+
+   if(TileAction == TILE_ACTION_NEED_UPDATE)
+   {
+       VisualizeColor.x = 1.0;
+   }
+   else if(TileAction == TILE_ACTION_NEED_REMOVE)
+   {
+        VisualizeColor.y = 1.0;
+   }
+   else if(TileAction == TILE_ACTION_CACHED)
+   {
+        VisualizeColor.yz = 1.0;
    }
    else
    {
@@ -128,4 +160,23 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
         OutputVisualizeTexture[DispatchThreadID] += float4(VisualizeColor.xyz,1.0);
     }
     
+    if(VisualizeType == 2)
+    {
+        if(GroupID.x < 32 && GroupID.y < 32)
+        {   
+            VisualizeTileAction(GroupID, 0, VisualizeColor);
+        }
+
+        if(GroupID.x >= 32 && GroupID.x < (32 + 16) && GroupID.y < 16)
+        {   
+            VisualizeTileAction(GroupID - uint2(32,0), 1, VisualizeColor);
+        }
+
+        if(GroupID.x >= (32 + 16) && GroupID.x < (32 + 16 + 8) && GroupID.y < 8)
+        {   
+            VisualizeTileAction(GroupID - uint2(32 + 16,0), 2, VisualizeColor);
+        }
+
+        OutputVisualizeTexture[DispatchThreadID] += float4(VisualizeColor.xyz,1.0);
+    }
 }
