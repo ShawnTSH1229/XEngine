@@ -5,7 +5,7 @@
 #define VSM_TILE_TEX_PHYSICAL_SIZE 128
 #define VSM_MIN_LEVEL_DISTANCE 64.0 // Radius = 64, Range = 64 * 2 = 128
 
-#define VSM_CLIPMAP_MIN_LEVEL 6 // 2^7 = 128
+#define VSM_CLIPMAP_MIN_LEVEL 6 // 2 ^ (6 + 1) = 128
 
 #define TILE_STATE_UNUSED 0
 #define TILE_STATE_USED 1

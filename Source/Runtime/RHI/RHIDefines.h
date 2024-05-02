@@ -111,6 +111,12 @@ enum class EVertexElementType
 	VET_NumBits = 5,
 };
 
+enum class EResourceAccessFlag
+{
+	RAF_None,
+	RAF_UAV,
+};
+
 enum class EBufferUsage : uint16
 {
 	BUF_None					= 0,

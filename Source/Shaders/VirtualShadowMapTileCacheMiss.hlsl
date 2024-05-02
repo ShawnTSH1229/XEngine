@@ -1,4 +1,4 @@
-#include "Math.hlsl"
+ #include "Math.hlsl"
 #include "VirtualShadowMapCommon.hlsl"
 
 // this constant buffer is used for cache miss test

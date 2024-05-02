@@ -146,6 +146,8 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 
 void XDeferredShadingRenderer::VirtualShadowMapTileMark(XRHICommandList& RHICmdList)
 {
+	//TODO: Add Resource Transation
+
 	RHICmdList.RHIEventBegin(1, "VSMTileMaskCS", sizeof("VSMTileMaskCS"));
 	TShaderReference<XVirtualShadowMapTileMark> VSMTileMaskCS = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapTileMark>();
 	SetComputePipelineStateFromCS(RHICmdList, VSMTileMaskCS.GetComputeShader());
@@ -153,6 +155,11 @@ void XDeferredShadingRenderer::VirtualShadowMapTileMark(XRHICommandList& RHICmdL
 	RHICmdList.RHIDispatchComputeShader(static_cast<uint32>((RViewInfo.ViewWidth  + 15 )/ 16), static_cast<uint32>((RViewInfo.ViewHeight + 15) / 16), 1);
 	RHICmdList.RHIEventEnd();
 }
+
+enum class EVSMVisualizeType
+{
+	EVSMVIS_TILEMASK,
+};
 
 void XDeferredShadingRenderer::VirtualShadowMapVisualize(XRHICommandList& RHICmdList)
 {
