@@ -19,7 +19,7 @@ struct XBoundingBox
     XVector3 Center;
     XVector3 Extent;
 
-	XBoundingBox& Transform(XMatrix& MatrixIn);
+	XBoundingBox Transform(XMatrix& MatrixIn);
 };
 
 constexpr float X_PI = 3.141592654f;

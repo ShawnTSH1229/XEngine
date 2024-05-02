@@ -5,6 +5,21 @@
 #include "D3D12PlatformRHI.h"
 #include "D3D12Viewport.h"
 
+D3D12_RESOURCE_STATES GetD3DResourceState(EResourceAccessFlag SrcAcessFlag)
+{
+	switch (SrcAcessFlag)
+	{
+	case EResourceAccessFlag::RAF_COMMON:
+		return D3D12_RESOURCE_STATE_COMMON;
+	default:
+		XASSERT(false);
+		return D3D12_RESOURCE_STATE_COMMON;
+	}
+
+	XASSERT(false);
+	return D3D12_RESOURCE_STATE_COMMON;
+}
+
 void XD3DDirectContex::Create(XD3D12AbstractDevice* device_in)
 {
 	AbsDevice = device_in;
@@ -205,6 +220,12 @@ void XD3DDirectContex::RHIDispatchComputeShader(uint32 ThreadGroupCountX, uint32
 	cmd_dirrect_list->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
 
 	PassStateManager.ResetState();
+}
+
+void XD3DDirectContex::TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag)
+{
+	XASSERT(SrcAcessFlag == EResourceAccessFlag::RAF_UNKOWN);
+	XD3D12PlatformRHI::Base_TransitionResource(cmd_dirrect_list, static_cast<XD3D12StructBuffer*>(SrcBuffer.get())->ResourcePtr.GetBackResource(), GetD3DResourceState(DestAcessFlag));
 }
 
 void XD3DDirectContex::SetVertexBuffer(XRHIBuffer* RHIVertexBuffer, uint32 VertexBufferSlot, uint32 OffsetFormVBBegin)

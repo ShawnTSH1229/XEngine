@@ -48,7 +48,8 @@ public:
 	//Misc
 	void RHISetViewport(float MinX, float MinY, float MinZ, float MaxX, float MaxY, float MaxZ)override;
 	void SetRenderTargetsAndViewPort(uint32 NumRTs,const XRHIRenderTargetView* RTViews, const XRHIDepthStencilView* DSView)override;
-	
+	void TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag) override;
+
 	//DrawCall/DisPatch
 	void RHIEventBegin(uint32 Metadata, const void* pData, uint32 Size)override
 	{

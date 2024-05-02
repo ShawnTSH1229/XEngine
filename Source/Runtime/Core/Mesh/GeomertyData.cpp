@@ -100,7 +100,7 @@ void GIndexBuffer::CreateRHIBufferChecked()
 }
 
 
-std::shared_ptr<XRHIConstantBuffer> GGeomertry::GetPerObjectVertexCBuffer()
+std::shared_ptr<XRHIConstantBuffer> GGeomertry::GetAndUpdatePerObjectVertexCBuffer()
 {
 	if (PerObjectVertexCBuffer.get() == nullptr)
 	{
@@ -113,6 +113,16 @@ std::shared_ptr<XRHIConstantBuffer> GGeomertry::GetPerObjectVertexCBuffer()
 	VertexCB.BoundBoxMin = GetBoudingBoxWithTrans().Center - GetBoudingBoxWithTrans().Extent;
 
 	PerObjectVertexCBuffer->UpdateData(&VertexCB, sizeof(VertexCBufferStruct), 0);
+
+	return PerObjectVertexCBuffer;
+}
+
+std::shared_ptr<XRHIConstantBuffer> GGeomertry::GetPerObjectVertexCBuffer()
+{
+	if (PerObjectVertexCBuffer.get() == nullptr)
+	{
+		PerObjectVertexCBuffer = RHICreateConstantBuffer(sizeof(VertexCBufferStruct));
+	}
 
 	return PerObjectVertexCBuffer;
 }

@@ -16,7 +16,7 @@ Texture2D SceneDepthTexture;
 RWStructuredBuffer<uint> VirtualShadowMapTileState; // 32 * 32 + 16 * 16 + 8 * 8
 
 [numthreads(16, 16, 1)]
-void VSMTileMaskCS(uint2 DispatchThreadID :SV_DispatchThreadID)
+void VSMTileMaskCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID,uint2 DispatchThreadID :SV_DispatchThreadID)
 {
     float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID.xy,0));
     float2 UV = DispatchThreadID * View_BufferSizeAndInvSize.zw;

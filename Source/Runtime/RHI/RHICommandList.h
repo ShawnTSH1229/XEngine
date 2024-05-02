@@ -76,6 +76,11 @@ public:
 		}
 	}
 
+	void TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag)
+	{
+		GetContext()->TransitionResource(SrcBuffer, SrcAcessFlag, DestAcessFlag);
+	}
+
 private:
 	IRHIContext* Context;
 	IRHIContext* ComputeContext;

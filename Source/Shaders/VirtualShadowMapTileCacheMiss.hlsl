@@ -2,27 +2,29 @@
 #include "VirtualShadowMapCommon.hlsl"
 
 // this constant buffer is used for cache miss test
-cbuffer cbDynamicObjectParameters
+cbuffer CBDynamicObjectParameters
 {
     row_major float4x4 gWorld;
-    float3 BoundingBoxCenter; //world space
+    float3 BoundingBoxMax; //world space
     uint isDynamicObejct;
-    float3 BoundingBoxExtent;
+    float3 BoundingBoxMin;
     float padding1;
 };
 
-cbuffer cbShadowViewInfo
+cbuffer CbShadowViewInfo
 {
     row_major float4x4 LightViewProjectMatrix;
     float3 WorldCameraPosition;
 };
 
-RWBuffer<uint> VirtualShadowMapTileStateCacheMiss;
+RWStructuredBuffer<uint> VirtualShadowMapTileStateCacheMiss;
 
 [numthreads(1, 1, 1)]
 void VSMTileCacheMissCS(uint2 DispatchThreadID :SV_DispatchThreadID)
 {
     float4 Corner[8];
+    float3 BoundingBoxCenter = (BoundingBoxMax + BoundingBoxMin) * 0.5;
+    float3 BoundingBoxExtent = (BoundingBoxMax - BoundingBoxCenter);
 
     [unroll]
     for(uint i = 0; i < 8 ; i++)
@@ -36,7 +38,7 @@ void VSMTileCacheMissCS(uint2 DispatchThreadID :SV_DispatchThreadID)
     [unroll]
     for(uint j = 0; j < 8 ; j++)
     {
-        float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), ShadowViewProject);
+        float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), LightViewProjectMatrix);
         ScreenPosition.xyz/=ScreenPosition.w;
 
         float2 ScreenUV = ScreenPosition.xy;
@@ -55,17 +57,19 @@ void VSMTileCacheMissCS(uint2 DispatchThreadID :SV_DispatchThreadID)
         uint2 TileIndexMin = uint2(UVMin * MipLevelSize[MipLevel]);
         uint2 TileIndexMax = uint2(UVMax * MipLevelSize[MipLevel]);
 
-        for(uint IndexY = TileIndexMin.y ; IndexY <= TileIndexMax.y ; IndexY++)
+        if(TileIndexMax.x < MipLevelSize[MipLevel] && TileIndexMin.x > 0 && TileIndexMax.y < MipLevelSize[MipLevel] && TileIndexMin.y >0)
         {
-            for(uint IndexX = TileIndexMin.x ; IndexX <= TileIndexMax.x ; IndexX++)
+            for(uint IndexY = TileIndexMin.y ; IndexY <= TileIndexMax.y ; IndexY++)
             {
-                if(IndexX < MipLevelSize[MipLevel] && IndexX >0 && IndexY < MipLevelSize[MipLevel] && indexY >0)
+                for(uint IndexX = TileIndexMin.x ; IndexX <= TileIndexMax.x ; IndexX++)
                 {
-                    int DestTileInfoIndex = MipLevelOffset[MipLevel] + IndexY * MipLevelSize[MipLevel] + IndexX;
-                    VirtualShadowMapTileStateCacheMiss[DestTileInfoIndex] = TILE_STATE_CACHE_MISS;
+                        int DestTileInfoIndex = MipLevelOffset[MipLevel] + IndexY * MipLevelSize[MipLevel] + IndexX;
+                        VirtualShadowMapTileStateCacheMiss[DestTileInfoIndex] = TILE_STATE_CACHE_MISS;
                 }
             }
         }
+
+
     }
 
 }

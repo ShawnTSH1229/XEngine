@@ -3,7 +3,7 @@
 
 void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XBoundSphere& BoundSphere)
 {
-    float VSM_MAX_MIP_RESOLUTION = int(VSM_MIN_LEVEL_DISTANCE * 2.0) << VSM_MIP_NUM;
+    float VSM_MAX_MIP_RESOLUTION = int(VSM_MIN_LEVEL_DISTANCE * 2.4) << VSM_MIP_NUM;
     XVector3 BoundMin(-VSM_MAX_MIP_RESOLUTION * 0.5, -10, -VSM_MAX_MIP_RESOLUTION * 0.5);
     XVector3 BoundMax(+VSM_MAX_MIP_RESOLUTION * 0.5, +10, +VSM_MAX_MIP_RESOLUTION * 0.5);
     
@@ -22,15 +22,15 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
 
     {
         float Mip0CubeNumPerDimension = VSM_TILE_MAX_MIP_NUM_XY;
-        float Mip0Stride = int(VSM_MIN_LEVEL_DISTANCE * 2.0) / Mip0CubeNumPerDimension;
+        float Mip0Stride = int(VSM_MIN_LEVEL_DISTANCE * 2.8) / Mip0CubeNumPerDimension;
         for (int Mip0X = 0; Mip0X < Mip0CubeNumPerDimension; Mip0X++)
         {
             for (int Mip0Z = 0; Mip0Z < Mip0CubeNumPerDimension; Mip0Z++)
             {
                 std::shared_ptr<GGeomertry> CubeInstance = DefaultCube->CreateGeoInstancewithMat();
                 std::shared_ptr<GGeomertry> QuadInstance = DefaultQuad->CreateGeoInstancewithMat();
-                float XPos = Mip0X * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE);
-                float ZPos = Mip0Z * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE);
+                float XPos = Mip0X * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE * 1.4);
+                float ZPos = Mip0Z * Mip0Stride + (-VSM_MIN_LEVEL_DISTANCE * 1.4);
                 CubeInstance->SetWorldTranslate(XVector3(XPos, 1.0, ZPos));
                 QuadInstance->SetWorldTranslate(XVector3(XPos, 0, ZPos));
                 QuadInstance->SetWorldScale(XVector3(0.25, 0.25, 0.25));
@@ -44,8 +44,8 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
     {
         float MipCubeNumPerDimension = VSM_TILE_MAX_MIP_NUM_XY;
         
-        float PreMipRange = int(VSM_MIN_LEVEL_DISTANCE * 2.0) << (MipIndex - 1);
-        float CurrentMipRange = int(VSM_MIN_LEVEL_DISTANCE * 2.0) << MipIndex;
+        float PreMipRange = (int(VSM_MIN_LEVEL_DISTANCE * 2.8) << (MipIndex - 1)) * 2.0;
+        float CurrentMipRange = (int(VSM_MIN_LEVEL_DISTANCE * 2.8) << MipIndex) * 2.0;
        
         float MipStride = CurrentMipRange / MipCubeNumPerDimension;
     

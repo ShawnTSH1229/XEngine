@@ -113,7 +113,8 @@ enum class EVertexElementType
 
 enum class EResourceAccessFlag
 {
-	RAF_None,
+	RAF_UNKOWN,
+	RAF_COMMON,
 	RAF_UAV,
 };
 

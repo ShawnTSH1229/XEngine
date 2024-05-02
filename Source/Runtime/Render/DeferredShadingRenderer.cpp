@@ -154,13 +154,13 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 		VirtualShadowMapRendering(RHICmdList);
 	}
 
-	{
-		VSMUpdate_Deprecated();
-		VSMTileMaskPass_Deprecated(RHICmdList);
-		VSMPageTableGen_Deprecated(RHICmdList);
-		VSMShadowCommandBuild_Deprecated(RHICmdList);
-		VirtualShadowMapGen_Deprecated(RHICmdList);
-	}
+	//{
+	//	VSMUpdate_Deprecated();
+	//	VSMTileMaskPass_Deprecated(RHICmdList);
+	//	VSMPageTableGen_Deprecated(RHICmdList);
+	//	VSMShadowCommandBuild_Deprecated(RHICmdList);
+	//	VirtualShadowMapGen_Deprecated(RHICmdList);
+	//}
 #if USE_SVOGI
 	ShadowMapGenPass(RHICmdList);
 	SVOInjectLightPass(RHICmdList);
@@ -169,7 +169,7 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 	BasePassRendering(RHICmdList);
 	ShadowMaskGenerate(RHICmdList);
 	{
-		VSMTileMaskClear_Deprecated(RHICmdList);
+		//VSMTileMaskClear_Deprecated(RHICmdList);
 	}
 
 	LightPass(RHICmdList);
@@ -188,7 +188,7 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 		PingPongindex++;
 		PostprocessAA(RHICmdList, PingPongTex[PingPongindex % 2], PingPongTex[(PingPongindex + 1) % 2]);
 
-		TempUIRenderer(RHICmdList, PingPongTex[(PingPongindex + 1) % 2]);
+		//TempUIRenderer(RHICmdList, PingPongTex[(PingPongindex + 1) % 2]);
 		PresentPass(RHICmdList, PingPongTex[(PingPongindex + 1) % 2]);
 	}
 	RHICmdList.RHIEndFrame();

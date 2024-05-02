@@ -61,7 +61,7 @@ void XDeferredShadingRenderer::BasePassRendering(XRHICommandList& RHICmdList)
 
 					//SetParameter
 					{
-						BaseVertexShader->SetParameter(RHICmdList, RViewInfo.ViewConstantBuffer.get(), GeoInsPtr->GetPerObjectVertexCBuffer().get());
+						BaseVertexShader->SetParameter(RHICmdList, RViewInfo.ViewConstantBuffer.get(), GeoInsPtr->GetAndUpdatePerObjectVertexCBuffer().get());
 						BasePixelShader->SetParameter(RHICmdList, MaterialInstancePtr);
 					}
 

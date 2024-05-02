@@ -103,6 +103,12 @@ void CSMain(uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
             InFrustum = InFrustum & BoundingBoxInPlane(SceneConstantBufferIN[index].BoundingBoxCenter,SceneConstantBufferIN[index].BoundingBoxExtent,Planes[i]);
         }
 
+        //todo: fix bug
+        if(SceneConstantBufferIN[0].BoundingBoxCenter.x > -1000.0f)
+        {
+            InFrustum = true;
+        }
+
         if(InFrustum == true)
         {
             outputCommands.Append(inputCommands[index]);

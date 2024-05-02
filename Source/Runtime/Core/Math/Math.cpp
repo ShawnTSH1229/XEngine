@@ -11,7 +11,7 @@ namespace DirectX
     }
 }
 
-XBoundingBox& XBoundingBox::Transform(XMatrix& MatrixIn)
+XBoundingBox XBoundingBox::Transform(XMatrix& MatrixIn)
 {
     DirectX::BoundingBox BBCom(Center, Extent);
     DirectX::BoundingBox BBOut;

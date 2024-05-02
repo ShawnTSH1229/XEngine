@@ -492,7 +492,7 @@ void XDeferredShadingRenderer::VSMSetup_Deprecated()
 	for (int i = 0; i < RenderGeos.size(); i++)
 	{
 		auto& it = RenderGeos[i];
-		RHICmdData[i].CBVs.push_back(it->GetPerObjectVertexCBuffer().get());
+		RHICmdData[i].CBVs.push_back(it->GetAndUpdatePerObjectVertexCBuffer().get());
 		RHICmdData[i].CBVs.push_back(VirtualShadowMapResourece.TilesShadowViewProjMatrixCB.get());
 		RHICmdData[i].CBVs.push_back(VirtualShadowMapResourece.TilesShadowViewProjMatrixCB.get());
 

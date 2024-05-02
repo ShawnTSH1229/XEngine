@@ -63,6 +63,7 @@ public:
 	void VirtualShadowMapUpdate();
 	void VirtualShadowMapRendering(XRHICommandList& RHICmdList);
 	void VirtualShadowMapTileMark(XRHICommandList& RHICmdList);
+	void VirtualShadowMapUpdateTileAction(XRHICommandList& RHICmdList);
 	void VirtualShadowMapVisualize(XRHICommandList& RHICmdList);
 
 	//Virtual Shadow Map Generate

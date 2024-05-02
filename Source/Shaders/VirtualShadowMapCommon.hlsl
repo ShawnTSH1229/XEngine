@@ -14,6 +14,7 @@
 #define TILE_ACTION_NONE 0
 #define TILE_ACTION_NEED_UPDATE 1
 #define TILE_ACTION_NEED_REMOVE 2
+#define TILE_ACTION_NEED_CACHED 4
 
 struct SShadowViewInfo
 {

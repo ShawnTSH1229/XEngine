@@ -75,6 +75,7 @@ public:
 
 	//Trasition Temporary
 	virtual void Transition(XRHITransitionInfo TransitionInfo) { __debugbreak(); };
+	virtual void TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag) = 0;
 
 #if RHI_RAYTRACING
 	virtual void RHIBuildAccelerationStructures(const std::span<const XRayTracingGeometryBuildParams> Params, const XRHIBufferRange& ScratchBufferRange) {};

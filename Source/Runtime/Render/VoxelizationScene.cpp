@@ -245,7 +245,7 @@ void XDeferredShadingRenderer::VoxelizationPass(XRHICommandList& RHICmdList)
 
 					//SetParameter
 					{
-						BaseVertexShader->SetParameter(RHICmdList, SVOGIResourece.VoxelSceneVSCBuffer.get(), GeoInsPtr->GetPerObjectVertexCBuffer().get());
+						BaseVertexShader->SetParameter(RHICmdList, SVOGIResourece.VoxelSceneVSCBuffer.get(), GeoInsPtr->GetAndUpdatePerObjectVertexCBuffer().get());
 						BasePixelShader->SetParameter(RHICmdList, MaterialInstancePtr,
 							SVOGIResourece.VoxelArrayUnorderedAcessView.get(), 
 							GetRHIUAVFromTexture(SVOGIResourece.NodeCountAndOffsetBuffer.get()),

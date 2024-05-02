@@ -288,8 +288,8 @@ std::shared_ptr<GGeomertry> CreateDefualCubeGeo()
 
 		TextureCoords.push_back(XVector2(0, 1));
 		TextureCoords.push_back(XVector2(1, 1));
-		TextureCoords.push_back(XVector2(0, 0));
 		TextureCoords.push_back(XVector2(1, 0));
+		TextureCoords.push_back(XVector2(0, 0));
 
 		TangentX.push_back(XVector3(-1.0, 0.0, 0.0));
 		TangentX.push_back(XVector3(-1.0, 0.0, 0.0));
@@ -305,8 +305,8 @@ std::shared_ptr<GGeomertry> CreateDefualCubeGeo()
 		Indices.push_back(1 + IndexOffset);
 		Indices.push_back(2 + IndexOffset);
 
+		Indices.push_back(0 + IndexOffset);
 		Indices.push_back(2 + IndexOffset);
-		Indices.push_back(1 + IndexOffset);
 		Indices.push_back(3 + IndexOffset);
 		IndexOffset += 4;
 	}

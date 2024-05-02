@@ -138,7 +138,7 @@ void XDeferredShadingRenderer::PreDepthPassGPUCullingSetup()
 	for (int i = 0; i < RenderGeos.size(); i++)
 	{
 		auto& it = RenderGeos[i];
-		RHICmdData[i].CBVs.push_back(it->GetPerObjectVertexCBuffer().get());
+		RHICmdData[i].CBVs.push_back(it->GetAndUpdatePerObjectVertexCBuffer().get());
 		auto VertexBufferPtr = it->GetRHIVertexBuffer();
 		auto IndexBufferPtr = it->GetRHIIndexBuffer();
 		RHICmdData[i].VB = VertexBufferPtr.get();

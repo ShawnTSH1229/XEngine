@@ -115,6 +115,7 @@ public:
 	inline void SetMaterialPtr(std::shared_ptr<GMaterialInstance>MaterialInstancePtrIn) { MaterialInstancePtr = MaterialInstancePtrIn; }
 
 
+	std::shared_ptr<XRHIConstantBuffer> GetAndUpdatePerObjectVertexCBuffer();
 	std::shared_ptr<XRHIConstantBuffer> GetPerObjectVertexCBuffer();
 	std::shared_ptr<GGeomertry> CreateGeoInstanceNoMatAndTrans();
 	std::shared_ptr<GGeomertry> CreateGeoInstancewithMat();
