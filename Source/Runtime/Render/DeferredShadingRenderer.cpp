@@ -71,7 +71,7 @@ struct GlobalPerObjectConstants
 {
 	XMatrix World;
 	XVector3 BoundingBoxCenter;
-	float padding0 = 1.0f;
+	uint32 isDynamicObejct = 0;
 	XVector3 BoundingBoxExtent;
 	float padding1 = 1.0f;
 };
@@ -79,20 +79,20 @@ struct GlobalPerObjectConstants
 void XDeferredShadingRenderer::GlobalPerObjectBufferSetup()
 {
 	uint32 ObjConstVecSize = sizeof(GlobalPerObjectConstants) * RenderGeos.size();
-	GlobalPerObjectConstants* ConstantArray = (GlobalPerObjectConstants*)std::malloc(ObjConstVecSize);
-
+	GlobalObjectDataCPU.resize(RenderGeos.size());
 	for (int i = 0; i < RenderGeos.size(); i++)
 	{
 		auto& RG = RenderGeos[i];
 
 		XBoundingBox BoudingBoxTans = RG->GetBoudingBoxWithTrans();
-		ConstantArray[i].BoundingBoxCenter = BoudingBoxTans.Center ;
-		ConstantArray[i].BoundingBoxExtent = BoudingBoxTans.Extent;
-		ConstantArray[i].World = RG->GetWorldTransform().GetCombineMatrix();
+		GlobalObjectDataCPU[i].BoundingBoxCenter = BoudingBoxTans.Center ;
+		GlobalObjectDataCPU[i].BoundingBoxExtent = BoudingBoxTans.Extent;
+		GlobalObjectDataCPU[i].World = RG->GetWorldTransform().GetCombineMatrix();
+		GlobalObjectDataCPU[i].isDynamicObejct = RG->GetObjectMovable() ? 1 : 0;
 	}
 
 	FResourceVectorUint8 ObjectStructBufferData;
-	ObjectStructBufferData.Data = ConstantArray;
+	ObjectStructBufferData.Data = GlobalObjectDataCPU.data();
 	ObjectStructBufferData.SetResourceDataSize(ObjConstVecSize);
 	XRHIResourceCreateData ObjectStructBufferResourceData(&ObjectStructBufferData);
 

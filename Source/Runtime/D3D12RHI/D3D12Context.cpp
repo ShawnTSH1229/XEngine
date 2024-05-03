@@ -11,6 +11,8 @@ D3D12_RESOURCE_STATES GetD3DResourceState(EResourceAccessFlag SrcAcessFlag)
 	{
 	case EResourceAccessFlag::RAF_COMMON:
 		return D3D12_RESOURCE_STATE_COMMON;
+	case EResourceAccessFlag::RAF_SRV:
+		return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 	default:
 		XASSERT(false);
 		return D3D12_RESOURCE_STATE_COMMON;

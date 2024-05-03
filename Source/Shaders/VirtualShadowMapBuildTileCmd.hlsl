@@ -11,7 +11,7 @@ struct SceneConstantBuffer
 };
 
 // this constant buffer is used for cache miss test
-cbuffer cbDynamicObjectParameters
+cbuffer CBDynamicObjectParameters
 {
     row_major float4x4 DynamicgWorld;
     float3 DynamicBoundingBoxCenter; //world space
@@ -20,21 +20,27 @@ cbuffer cbDynamicObjectParameters
     float Dynamicpadding1;
 };
 
-cbuffer cbCullingParameters
+cbuffer CBCullingParameters
 {
     row_major float4x4 ShadowViewProject[3];
-    float MeshCount; 
-}
+    uint MeshCount; 
+};
 
 struct ShadowIndirectCommand
 {
+    // cbv
     uint2 CbWorldAddress;
+    
+    // vb
     uint2 VertexBufferLoacation;
     
     uint VertexSizeInBytes;
     uint VertexStrideInBytes;
+    
+    // ib
     uint2 IndexBufferLoacation;
     
+    // draw instanced index
     uint IndexSizeInBytes;
     uint IndexFormat;
     uint IndexCountPerInstance;
@@ -47,12 +53,12 @@ struct ShadowIndirectCommand
     uint Padding;
 };
 
-Buffer<uint> VirtualShadowMapTileAction;
+StructuredBuffer<uint> VirtualShadowMapTileAction;
 StructuredBuffer<SceneConstantBuffer> SceneConstantBufferIn;
 StructuredBuffer<ShadowIndirectCommand> InputCommands;
 
 RWStructuredBuffer<ShadowIndirectCommand> OutputCommands; 
-RWBuffer<uint> CommandCounterBuffer;
+RWStructuredBuffer<uint> CommandCounterBuffer;
 
 // GroupSize X 21 : Tile Group Num
 // GroupSize Y 50 : Mesh Batch Num
@@ -65,12 +71,12 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
     const uint2 TileIndexXY = GroupThreadID.xy;
     const uint MipTileIndex = (GroupIdxX - MipLevelGroupStart[MipLevel]) * VSM_TILE_MAX_MIP_NUM_XY * VSM_TILE_MAX_MIP_NUM_XY + TileIndexXY.y * VSM_TILE_MAX_MIP_NUM_XY + TileIndexXY.x;
     const uint GlobalTileIndex = MipLevelGroupOffset[MipLevel] + MipTileIndex;
-    const uint2 MipTileIndexXY = uint2(MipTileIndex % MipLevelSize[MipLevel],MipTileIndex / MipLevelSize[MipLevel]);
+    const uint2 MipTileIndexXY = uint2(MipTileIndex % MipLevelSize[MipLevel], MipTileIndex / MipLevelSize[MipLevel]);
 
     uint VirtualShadowMapAction = VirtualShadowMapTileAction[GlobalTileIndex];
     if(VirtualShadowMapAction == TILE_ACTION_NEED_UPDATE)
     {
-        uint StartBatchIndex = GroupID.Y * 10;
+        uint StartBatchIndex = GroupID.y * 10;
         uint EndBatchIndex = StartBatchIndex + 10;
 
         for(uint Index = StartBatchIndex;  (Index < EndBatchIndex) && (Index < MeshCount); Index++)
@@ -85,6 +91,8 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
                 BoundingBoxExtent = DynamicBoundingBoxExtent;
             }
 
+            float4 Corner[8];
+
             [unroll]
             for(uint i = 0; i < 8 ; i++)
             {
@@ -97,12 +105,12 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
             [unroll]
             for(uint j = 0; j < 8 ; j++)
             {
-                float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), ShadowViewProject);
-                ScreenPosition.xyz/=ScreenPosition.w;
+                float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), ShadowViewProject[MipLevel]);
+                ScreenPosition.xyz /= ScreenPosition.w;
 
                 float2 ScreenUV = ScreenPosition.xy;
                 ScreenUV.y *= -1.0;
-                ScreenUV = ScreenUV* 0.5 + 0.5f;
+                ScreenUV = ScreenUV * 0.5 + 0.5f;
 
                 UVMin.x = ScreenUV.x > UVMin.x ? UVMin.x : ScreenUV.x;
                 UVMin.y = ScreenUV.y > UVMin.y ? UVMin.y : ScreenUV.y;
@@ -112,17 +120,17 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
             }
 
 
-            uint2 TileIndexMin = uint2(UVMin * MipLevelSize[MipLevel]);
-            uint2 TileIndexMax = uint2(UVMax * MipLevelSize[MipLevel]);
+            uint2 TileIndexMin = uint2( UVMin * MipLevelSize[MipLevel]);
+            uint2 TileIndexMax = uint2( UVMax * MipLevelSize[MipLevel]);
 
-            if(TileIndexMin.X < MipTileIndexXY.X && MipTileIndexXY.Y < MipTileIndexXY.Y && TileIndexMax.X > MipTileIndexXY.X && TileIndexMax.Y > MipTileIndexXY.Y)
+            if(TileIndexMin.x < MipTileIndexXY.x && MipTileIndexXY.y < MipTileIndexXY.y && TileIndexMax.x > MipTileIndexXY.x && TileIndexMax.y > MipTileIndexXY.y)
             {
-                ShadowIndirectCommand InputCommands = InputCommands[Index];
-                InputCommands.StartInstanceLocation = GlobalTileIndex;
+                ShadowIndirectCommand InputCommand = InputCommands[Index];
+                InputCommand.StartInstanceLocation = GlobalTileIndex;
 
                 uint OriginalValue = 0;
-                InterlockedAdd(CommandCounterBuffer[0],1,OriginalValue);
-                OutputCommands[OriginalValue] = InputCommands;
+                InterlockedAdd(CommandCounterBuffer[0], 1, OriginalValue);
+                OutputCommands[OriginalValue] = InputCommand;
             }
         }
     }

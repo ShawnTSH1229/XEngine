@@ -23,8 +23,8 @@ void VS(SVSinput Input, uint InstanceID : SV_InstanceID, out float4 Position : S
     Position = mul(PositionW, ShadowViewInfo.ShadowViewProject);
 }
 
-RWTexture2D<uint>PhysicalShadowDepthTexture; // 4096 * 4096
-Buffer<uint> VirtualShadowMapTileTable; // 24 bit
+RWTexture2D<uint> PhysicalShadowDepthTexture; // 4096 * 4096
+StructuredBuffer<uint> VirtualShadowMapTileTable; // 24 bit
 
 void PS(in float4 PositionIn: SV_POSITION, in nointerpolation uint InstanceIndex : TEXCOORD0, out float PlaceHolderTarget : SV_TARGET)
 {

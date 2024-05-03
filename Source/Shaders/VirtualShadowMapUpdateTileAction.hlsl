@@ -37,14 +37,10 @@ void VSMUpdateTileActionCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_
 
     bool bTileUsed = (TileState == TILE_STATE_USED);
     bool bPreTileUsed = (PreTileState == TILE_STATE_USED);
-
     bool bNewTile = (TileState == TILE_STATE_USED) && (PreTileState == TILE_STATE_UNUSED);
     bool bCacheMissTile = (CacheMissAction == TILE_STATE_CACHE_MISS) && (PreTileState == TILE_STATE_USED);
-    
     bool bTileRemove = (TileState == TILE_STATE_UNUSED) && (PreTileState == TILE_STATE_USED);
-
     bool bTileActionCached = (bPreTileUsed) && (bTileUsed) && (!bCacheMissTile);
-    bool bTileActionNeedUpdate = bNewTile || bCacheMissTile;
     bool bTileActionNeedRemove = bTileRemove;
 
     uint TileAction = 0;
@@ -54,10 +50,16 @@ void VSMUpdateTileActionCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_
         VirtualShadowMapTileTable[GlobalTileIndex] = VirtualShadowMapPreTileTable[GlobalTileIndex];
         TileAction = TILE_ACTION_CACHED;
     }
-    
-    if(bTileActionNeedUpdate)
+
+    if(bCacheMissTile)
     {
-        TileAction = TILE_ACTION_NEED_UPDATE;
+        VirtualShadowMapTileTable[GlobalTileIndex] = VirtualShadowMapPreTileTable[GlobalTileIndex];
+        TileAction = TILE_ACTION_NEED_UPDATE;       
+    }
+    
+    if(bNewTile)
+    {
+        TileAction = TILE_ACTION_NEED_ALLOCATE | TILE_ACTION_NEED_UPDATE;
     }
 
     if(bTileActionNeedRemove)

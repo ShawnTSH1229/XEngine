@@ -17,12 +17,16 @@ cbuffer CbVisualizeParameters
     // 0 : Visualize Mip Level
     // 1 : Visualize Tile State
     uint VisualizeType;
+    uint3 DispatchSizeXYZ;
 };
 
 Texture2D SceneDepthTexture;
 StructuredBuffer<uint> VirtualShadowMapTileState;
 StructuredBuffer<uint> VirtualShadowMapTileStateCacheMiss;
 StructuredBuffer<uint> VirtualShadowMapTileAction;
+
+StructuredBuffer<uint> VirtualShadowMapFreeTileList;
+StructuredBuffer<uint> VirtualShadowMapFreeListStart; // 0 - 32 * 32
 
 RWTexture2D<float4> OutputVisualizeTexture; // 32 * 32 + 16 * 16 + 8 * 8
 
@@ -70,6 +74,10 @@ void VisualizeTileAction(uint2 TileIndex,uint MipLevel, in out float3 VisualizeC
    {
         VisualizeColor.yz = 1.0;
    }
+   else if(TileAction == TILE_ACTION_NEED_ALLOCATE)
+   {
+        VisualizeColor.xz = 1.0;
+   }
    else
    {
        if((TileIndex.x % 2) == (TileIndex.y % 2))
@@ -93,8 +101,7 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
         return;
     }
 
-    //OutputVisualizeTexture[DispatchThreadID] = float4(VisualizeColor.xyz,1.0);
-
+    // visualize tile mip level
     if(VisualizeType == 0)
     {
         float DeviceZ = SceneDepthTexture.Load(int3(DispatchThreadID.xy,0));
@@ -140,6 +147,7 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
         OutputVisualizeTexture[DispatchThreadID] += float4(VisualizeColor.xyz,1.0);
     }
 
+    // vissualize tile state
     if(VisualizeType == 1)
     {
         if(GroupID.x < 32 && GroupID.y < 32)
@@ -160,7 +168,8 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
         OutputVisualizeTexture[DispatchThreadID] += float4(VisualizeColor.xyz,1.0);
     }
     
-    if(VisualizeType == 2)
+    // visualize tile action
+    if(VisualizeType == 2 || VisualizeType == 4)
     {
         if(GroupID.x < 32 && GroupID.y < 32)
         {   
@@ -178,5 +187,34 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
         }
 
         OutputVisualizeTexture[DispatchThreadID] += float4(VisualizeColor.xyz,1.0);
+    }
+
+    // visualize physical tile state
+    if(VisualizeType == 3 || VisualizeType == 4)
+    {
+        uint Offset = 32 + 16 + 8;
+        if(GroupID.x >= Offset && GroupID.x < (Offset + VSM_TEX_PHYSICAL_WH) && GroupID.y < VSM_TEX_PHYSICAL_WH)
+        {
+            uint PhysicalTileIndex = GroupID.y * VSM_TEX_PHYSICAL_WH + (GroupID.x - Offset);
+            uint TileIndex = VirtualShadowMapFreeTileList[PhysicalTileIndex];
+            uint TileIndexX = TileIndex & 0xFFFF;
+            uint TileIndexY = (TileIndex >> 16) & 0xFFFF;
+            uint2 DestIndex = uint2((Offset + TileIndexX) * 16 + GroupThreadID.x, TileIndexY * 16 + GroupThreadID.y);
+
+            if(PhysicalTileIndex > VirtualShadowMapFreeListStart[0])
+            {
+                if((TileIndexX % 2) == (TileIndexY % 2))
+                {
+                    VisualizeColor.x = 1.0;
+                }
+                else
+                {
+                    VisualizeColor.x = 0.5;
+                }
+
+                OutputVisualizeTexture[DestIndex] += float4(VisualizeColor.xyz,1.0);
+            }
+            
+        }
     }
 }

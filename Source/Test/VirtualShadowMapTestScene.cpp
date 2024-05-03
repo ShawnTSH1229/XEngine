@@ -17,6 +17,7 @@ void CreateVSMTestScene(std::vector<std::shared_ptr<GGeomertry>>& RenderGeos, XB
     DefaultCube->GetMaterialInstance()->SetMaterialValueFloat("ConstantRoughness", 0.6);
     std::shared_ptr<GGeomertry> CenterCube = DefaultCube->CreateGeoInstancewithMat();
     CenterCube->SetWorldTranslate(XVector3(1, 1.5, 0));
+    CenterCube->SetObjectMovable(true);
     RenderGeos.push_back(CenterCube);
 
 

@@ -115,6 +115,7 @@ enum class EResourceAccessFlag
 {
 	RAF_UNKOWN,
 	RAF_COMMON,
+	RAF_SRV,
 	RAF_UAV,
 };
 

@@ -64,6 +64,7 @@ public:
 	void VirtualShadowMapRendering(XRHICommandList& RHICmdList);
 	void VirtualShadowMapTileMark(XRHICommandList& RHICmdList);
 	void VirtualShadowMapUpdateTileAction(XRHICommandList& RHICmdList);
+	void VirtualShadowMapPhysicalTileManage(XRHICommandList& RHICmdList);
 	void VirtualShadowMapVisualize(XRHICommandList& RHICmdList);
 
 	//Virtual Shadow Map Generate
@@ -120,6 +121,7 @@ private:
 	XSkyAtmosphereParams cbSkyAtmosphereIns;
 	XEditorUI EditorUI;
 
+	std::vector<GlobalPerObjectConstants> GlobalObjectDataCPU;
 	std::shared_ptr<XRHIStructBuffer>GlobalObjectStructBuffer;
 	std::shared_ptr<XRHIShaderResourceView>GlobalObjectStructBufferSRV;
 public:

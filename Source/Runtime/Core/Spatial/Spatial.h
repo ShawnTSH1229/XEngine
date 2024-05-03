@@ -10,6 +10,7 @@ protected:
 	XTransform WorldTransform;
 	GSpatial* ParentSpatial;
 	XBoundingBox BoundingBox;
+	bool bMovableObject = false;
 public:
 	inline XBoundingBox GetBoudingBoxNoTrans()
 	{
@@ -33,25 +34,12 @@ public:
 		BoundingBox.Extent = Extent;
 	}
 
-	inline XTransform GetWorldTransform()
-	{
-		return WorldTransform;
-	}
-
-	inline void SetWorldRotate(const XVector3& Axis,float Angle)
-	{
-		WorldTransform.SetRotate(Axis, Angle);
-	}
-
-	inline void SetWorldTranslate(const XVector3& TranslationIn)
-	{
-		WorldTransform.SetTranslation(TranslationIn);
-	}
-
-	inline void SetWorldScale(const XVector3& WorldScale)
-	{
-		WorldTransform.SetScale(WorldScale);
-	}
+	inline XTransform GetWorldTransform() { return WorldTransform; }
+	inline void SetWorldRotate(const XVector3& Axis, float Angle) { WorldTransform.SetRotate(Axis, Angle); }
+	inline void SetWorldTranslate(const XVector3& TranslationIn) { WorldTransform.SetTranslation(TranslationIn); }
+	inline void SetWorldScale(const XVector3& WorldScale) { WorldTransform.SetScale(WorldScale); }
+	inline void SetObjectMovable(bool Movable) { bMovableObject = Movable; }
+	inline bool GetObjectMovable() { return bMovableObject; }
 };
 
 class GNode :public  GSpatial
