@@ -77,18 +77,6 @@ public:
 	void VirtualShadowMapProjection(XRHICommandList& RHICmdList);
 	void VirtualShadowMapVisualize(XRHICommandList& RHICmdList);
 
-	//Virtual Shadow Map Generate
-	void VSMSetup_Deprecated();
-	void VSMUpdate_Deprecated();
-
-	void VSMTileMaskPass_Deprecated(XRHICommandList& RHICmdList);
-	void VSMPageTableGen_Deprecated(XRHICommandList& RHICmdList);
-	void VSMShadowCommandBuild_Deprecated(XRHICommandList& RHICmdList);
-	void VirtualShadowMapGen_Deprecated(XRHICommandList& RHICmdList);
-	void VSMTileMaskClear_Deprecated(XRHICommandList& RHICmdList);
-	//Shadow Mask Generate
-	void ShadowMaskGenerate_Deprecated(XRHICommandList& RHICmdList);
-
 	//HZBPass
 	void HZBPass(XRHICommandList& RHICmdList);
 
@@ -98,8 +86,6 @@ public:
 
 	//BasePass Rendering
 	void BasePassRendering(XRHICommandList& RHICmdList);
-
-
 
 	//LightPass
 	void LightPass(XRHICommandList& RHICmdList);

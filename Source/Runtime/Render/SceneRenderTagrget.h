@@ -9,7 +9,6 @@ struct XSceneRenderTarget
 	std::shared_ptr<XRHITexture2D> TextureGBufferD;
 
 	std::shared_ptr<XRHITexture2D> PhysicalShadowDepthTexture;
-	std::shared_ptr<XRHITexture2D> PagetableInfos;
 	std::shared_ptr<XRHITexture2D> VSMShadowMaskTexture;
 
 	std::shared_ptr<XRHITexture2D> TextureDepthStencil;

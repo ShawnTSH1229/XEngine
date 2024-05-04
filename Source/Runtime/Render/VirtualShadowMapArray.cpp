@@ -821,14 +821,6 @@ static void MipTilesShadowViewProjMatrixBuild(XBoundSphere& SceneBoundingSphere,
 			}
 		}
 
-		
-		for (uint32 IDX = 0; IDX < ShadowTileViewParametersCPU.size(); IDX++)
-		{
-			if (ShadowTileViewParametersCPU[IDX].VirtualTableIndexX > 40)
-			{
-				int DebugVar = 0;
-			}
-		}
 
 		VirtualShadowMapResource.LightSubProjectMatrix->UpdateData(ShadowTileViewParametersCPU.data(), ResourceSize, 0);
 		bInit = true;
@@ -1145,6 +1137,7 @@ void XDeferredShadingRenderer::VirtualShadowMapProjection(XRHICommandList& RHICm
 
 void XDeferredShadingRenderer::VirtualShadowMapVisualize(XRHICommandList& RHICmdList)
 {
+	return;
 	XRHITexture* TextureSceneColor = SceneTargets.TextureSceneColorDeffered.get();
 
 	SVSMVisualizeParameters VSMVisualizeParameters;

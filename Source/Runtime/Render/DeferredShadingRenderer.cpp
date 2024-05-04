@@ -112,8 +112,6 @@ void XDeferredShadingRenderer::Setup(
 	BeginInitResource(&DefaultVertexFactory);
 	SceneTagetGen();
 	PreDepthPassGPUCullingSetup();
-	VSMSetup_Deprecated();
-
 	VirutalShadowMapSetup();
 	
 
@@ -142,27 +140,15 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 		HZBPass(RHICmdList);
 	}
 
-	{
-		VirtualShadowMapRendering(RHICmdList);
-	}
+	VirtualShadowMapRendering(RHICmdList);
 
-	//{
-	//	VSMUpdate_Deprecated();
-	//	VSMTileMaskPass_Deprecated(RHICmdList);
-	//	VSMPageTableGen_Deprecated(RHICmdList);
-	//	VSMShadowCommandBuild_Deprecated(RHICmdList);
-	//	VirtualShadowMapGen_Deprecated(RHICmdList);
-	//}
+
 #if USE_SVOGI
 	ShadowMapGenPass(RHICmdList);
 	SVOInjectLightPass(RHICmdList);
 #endif
 	SkyAtmosPhereRendering(RHICmdList);
 	BasePassRendering(RHICmdList);
-	{
-		//ShadowMaskGenerate_Deprecated(RHICmdList);
-		//VSMTileMaskClear_Deprecated(RHICmdList);
-	}
 
 	LightPass(RHICmdList);
 	SkyAtmoSphereCombine(RHICmdList);
