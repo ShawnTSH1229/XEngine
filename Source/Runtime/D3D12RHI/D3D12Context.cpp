@@ -230,6 +230,12 @@ void XD3DDirectContex::TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcB
 	XD3D12PlatformRHI::Base_TransitionResource(cmd_dirrect_list, static_cast<XD3D12StructBuffer*>(SrcBuffer.get())->ResourcePtr.GetBackResource(), GetD3DResourceState(DestAcessFlag));
 }
 
+void XD3DDirectContex::TransitionResource(std::shared_ptr<XRHITexture2D> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag)
+{
+	XASSERT(SrcAcessFlag == EResourceAccessFlag::RAF_UNKOWN);
+	XD3D12PlatformRHI::Base_TransitionResource(cmd_dirrect_list, static_cast<XD3D12Texture2D*>(SrcBuffer.get())->GetShaderResourceView()->GetResource(), GetD3DResourceState(DestAcessFlag));
+}
+
 void XD3DDirectContex::SetVertexBuffer(XRHIBuffer* RHIVertexBuffer, uint32 VertexBufferSlot, uint32 OffsetFormVBBegin)
 {
 	PassStateManager.SetVertexBuffer(RHIVertexBuffer, VertexBufferSlot, OffsetFormVBBegin);
@@ -257,6 +263,7 @@ void XD3DDirectContex::RHIExecuteIndirect(XRHICommandSignature* RHICmdSig, uint3
 	ID3D12Resource* CounterRes = static_cast<XD3D12StructBuffer*>(CountBuffer)->ResourcePtr.GetBackResource()->GetResource();
 
 	XD3D12PlatformRHI::Base_TransitionResource(cmd_dirrect_list, static_cast<XD3D12StructBuffer*>(ArgumentBuffer)->ResourcePtr.GetBackResource(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+	XD3D12PlatformRHI::Base_TransitionResource(cmd_dirrect_list, static_cast<XD3D12StructBuffer*>(CountBuffer)->ResourcePtr.GetBackResource(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 	PassStateManager.ApplyCurrentStateToPipeline<ED3D12PipelineType::D3D12PT_Graphics>();
 
 	

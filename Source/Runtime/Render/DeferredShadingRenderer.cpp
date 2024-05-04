@@ -159,8 +159,8 @@ void XDeferredShadingRenderer::Rendering(XRHICommandList& RHICmdList)
 #endif
 	SkyAtmosPhereRendering(RHICmdList);
 	BasePassRendering(RHICmdList);
-	ShadowMaskGenerate(RHICmdList);
 	{
+		//ShadowMaskGenerate_Deprecated(RHICmdList);
 		//VSMTileMaskClear_Deprecated(RHICmdList);
 	}
 

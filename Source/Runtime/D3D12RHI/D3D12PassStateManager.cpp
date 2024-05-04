@@ -157,6 +157,15 @@ void XD3D12PassStateManager::ApplyCurrentStateToPipeline()
 				PipelineState.Common.SRVManager.Mask[EShaderType_Underlying(EShaderType::SV_Pixel)]);
 		}
 
+		if (PipelineState.Common.SRVManager.Mask[EShaderType_Underlying(EShaderType::SV_Vertex)])
+		{
+			PipeCurrDescArrayManager.SetDescTableSRVs<EShaderType::SV_Vertex>(
+				PipelineState.Common.RootSignature,
+				&PipelineState.Common.SRVManager,
+				DescArraySlotStart,
+				PipelineState.Common.SRVManager.Mask[EShaderType_Underlying(EShaderType::SV_Vertex)]);
+		}
+
 	}
 	else
 	{

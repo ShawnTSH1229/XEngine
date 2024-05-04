@@ -152,8 +152,7 @@ void DeferredLightPixelMain(
 	float3 SurfaceLighting;
 	{
 		float Shadow=ShadowMaskTex.Sample(gsamPointWarp,ScreenUV).r;
-		Shadow = 0.0;
-		SurfaceLighting=(1.0-Shadow)*GetDynamicLighting(CameraVector,GBuffer,GBuffer.ShadingModelID) + GBuffer.BaseColor * 0.1;
+		SurfaceLighting=(1.0-Shadow)*GetDynamicLighting(CameraVector,GBuffer,GBuffer.ShadingModelID) + GBuffer.BaseColor * 0.05;
 	}
     OutColor=float4(SurfaceLighting.xyz,1.0f);
 }

@@ -43,6 +43,7 @@ public:
 	void RHISetViewport(float MinX, float MinY, float MinZ, float MaxX, float MaxY, float MaxZ);
 	void SetRenderTargetsAndViewPort(uint32 NumRTs, const XRHIRenderTargetView* RTViews, const XRHIDepthStencilView* DSView)override { XASSERT(false) };
 	void TransitionResource(std::shared_ptr<XRHIStructBuffer> SrcBuffer, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag) { XASSERT(false); };
+	void TransitionResource(std::shared_ptr<XRHITexture2D> SrcTexture, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag) { XASSERT(false); };
 
 	//DrawCall/DisPatch
 	void RHIEventBegin(uint32 Metadata, const void* pData, uint32 Size)override { XASSERT(false) };

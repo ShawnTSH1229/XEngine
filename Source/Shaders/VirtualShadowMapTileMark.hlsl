@@ -10,6 +10,8 @@ cbuffer CbShadowViewInfo
 {
     row_major float4x4 LightViewProjectMatrix;
     float3 WorldCameraPosition;
+    float SViewPadding0;
+    float3 ShadowLightDir;
 };
 
 Texture2D SceneDepthTexture;
@@ -38,7 +40,7 @@ void VSMTileMaskCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThr
     
     float2 UVOut = ShadowScreenPOS.xy; 
     UVOut.y *=- 1.0;
-    UVOut = UVOut* 0.5 + 0.5f;
+    UVOut = UVOut * 0.5 + 0.5f;
 
     float Distance = length(WorldCameraPosition - WorldPosition.xyz);
     float Log2Distance = log2(Distance + 1);

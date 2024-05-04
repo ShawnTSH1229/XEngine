@@ -16,14 +16,35 @@ cbuffer CBCullingParameters
     uint MeshCount; 
 };
 
+struct UINT64
+{
+    uint LowAddress;
+    uint HighAddress;
+};
+
+UINT64 UINT64_ADD(UINT64 InValue , uint InAdd)
+{
+    UINT64 Ret = InValue;
+    uint C= InValue.LowAddress + InAdd;
+    bool OverFlow = (C < InValue.HighAddress) || (C < InAdd);
+    if(OverFlow)
+    {
+        Ret.HighAddress += 1;
+    }
+    Ret.LowAddress = C;
+    return Ret;
+}
+
 struct ShadowIndirectCommand
 {
     // cbv
     uint2 CbWorldAddress;
     
+    UINT64 CbGlobalShadowViewProjectAddressVS; // Used For VSM
+    UINT64 CbGlobalShadowViewProjectAddressPS; // Used For VSM
+
     // vb
     uint2 VertexBufferLoacation;
-    
     uint VertexSizeInBytes;
     uint VertexStrideInBytes;
     
@@ -124,7 +145,10 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
 
             if(TileIndexMin.x <= MipTileIndexXY.x && TileIndexMin.y <= MipTileIndexXY.y && TileIndexMax.x >= MipTileIndexXY.x && TileIndexMax.y >= MipTileIndexXY.y)
             {
+                uint PointerOffset = GlobalTileIndex * ( 4 * 4 * 4 + 4 * 4); // float4x4 + uint4
                 ShadowIndirectCommand InputCommand = InputCommands[Index];
+                InputCommand.CbGlobalShadowViewProjectAddressVS = UINT64_ADD(InputCommand.CbGlobalShadowViewProjectAddressVS,PointerOffset);
+                InputCommand.CbGlobalShadowViewProjectAddressPS = InputCommand.CbGlobalShadowViewProjectAddressVS;
                 InputCommand.StartInstanceLocation = GlobalTileIndex;
 
                 uint OriginalValue = 0;

@@ -58,7 +58,7 @@ public:
 		GBufferCTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferCTexture");
 		//GBufferDTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_GBufferDTexture");
 		SceneDepthTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_SceneDepthTexture");
-		//ShadowMakTex.Bind(Initializer.ShaderParameterMap, "ShadowMaskTex");
+		ShadowMakTex.Bind(Initializer.ShaderParameterMap, "ShadowMaskTex");
 	}
 
 	void SetParameter(
@@ -81,7 +81,7 @@ public:
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferCTexture, InGBufferCTexture);
 		//SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, GBufferDTexture, InGBufferDTexture);
 		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SceneDepthTexture, InSceneDepthTexture);
-		//SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, ShadowMakTex, InLightAttenuationTexture);
+		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, ShadowMakTex, InLightAttenuationTexture);
 	}
 
 	//CBVParameterType CBV_View;
@@ -92,7 +92,7 @@ public:
 	TextureParameterType GBufferCTexture;
 	//TextureParameterType GBufferDTexture;
 	TextureParameterType SceneDepthTexture;
-	//TextureParameterType ShadowMakTex;
+	TextureParameterType ShadowMakTex;
 
 };
 

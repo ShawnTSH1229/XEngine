@@ -81,6 +81,11 @@ public:
 		GetContext()->TransitionResource(SrcBuffer, SrcAcessFlag, DestAcessFlag);
 	}
 
+	void TransitionResource(std::shared_ptr<XRHITexture2D> SrcTexture, EResourceAccessFlag SrcAcessFlag, EResourceAccessFlag DestAcessFlag)
+	{
+		GetContext()->TransitionResource(SrcTexture, SrcAcessFlag, DestAcessFlag);
+	}
+
 private:
 	IRHIContext* Context;
 	IRHIContext* ComputeContext;

@@ -13,6 +13,8 @@ __declspec(align(256)) struct SShadowViewInfo
 {
 	XMatrix LighgViewProject;
 	XVector3 WorldCameraPosition;
+	float SViewPadding0;
+	XVector3 ShadowLightDir;
 };
 
 __declspec(align(256)) struct SVSMClearParameters
@@ -33,6 +35,15 @@ __declspec(align(256)) struct SCullingParameters
 {
 	XMatrix ShadowViewProject;
 	uint32 MeshCount;
+};
+
+struct SLightSubProjectMatrix
+{
+	XMatrix LightViewProjectMatrix;
+	uint32 VirtualTableIndexX;
+	uint32 VirtualTableIndexY;
+	uint32 MipLevel;
+	uint32 padding2;
 };
 
 struct SVirtualShadowMapStructBuffer
@@ -83,6 +94,7 @@ public:
 	SVirtualShadowMapStructBuffer VirtualShadowMapTileTablePacked;
 	SVirtualShadowMapStructBuffer TileNeedUpdateCounter;
 
+	std::shared_ptr<XRHIConstantBuffer> LightSubProjectMatrix;
 	void InitRHI()override
 	{
 		BufferIndex = 0;
@@ -98,6 +110,8 @@ public:
 		VSMTileShadowViewConstantBuffer = RHICreateConstantBuffer(sizeof(SShadowViewInfo));
 		VSMCullingParameters = RHICreateConstantBuffer(sizeof(SCullingParameters));
 
+		uint32 ResourceSize = sizeof(SLightSubProjectMatrix) * (32 * 32 + 16 * 16 + 8 * 8);
+		LightSubProjectMatrix = RHICreateConstantBuffer(ResourceSize);
 		for (int Index = 0; Index < 2; Index++)
 		{
 			VirtualShadowMapTileState[Index] = RHIcreateStructBuffer(sizeof(uint32), sizeof(uint32) * TotalTileNum, EBufferUsage(int(EBufferUsage::BUF_StructuredBuffer) | int(EBufferUsage::BUF_UnorderedAccess)), nullptr);
@@ -135,6 +149,8 @@ public:
 
 		VirtualShadowMapTileTablePacked.Create(sizeof(uint32), 4096, nullptr);
 		TileNeedUpdateCounter.Create(sizeof(uint32), 4096, nullptr);
+
+		PlaceHodeltarget = RHICreateTexture2D(VSM_TILE_TEX_PHYSICAL_SIZE, VSM_TILE_TEX_PHYSICAL_SIZE, 1, false, false, EPixelFormat::FT_R8G8B8A8_UNORM, ETextureCreateFlags(TexCreate_RenderTargetable), 1, nullptr);
 	}
 
 	std::shared_ptr <XRHIStructBuffer> GetVSMTileStateBuffer(bool bPrevious) { return VirtualShadowMapTileState[(bPrevious ? ((BufferIndex + 1) % 2) : BufferIndex)]; };
@@ -554,6 +570,65 @@ public:
 };
 XVSMPhysicalTileClearCS::ShaderInfos XVSMPhysicalTileClearCS::StaticShaderInfos("VSMPhysicalTileClearCS", GET_SHADER_PATH("VirtualShadowMapPhysicalTileClear.hlsl"), "VSMPhysicalTileClearCS", EShaderType::SV_Compute, XVSMPhysicalTileClearCS::CustomConstrucFunc, XVSMPhysicalTileClearCS::ModifyShaderCompileSettings);
 
+class XVSMShadowMaskGenCS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVSMShadowMaskGenCS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+
+public:
+	struct SParameters
+	{
+		XRHIConstantBuffer* cbView;
+		XRHIConstantBuffer* CbShadowViewInfo;
+
+		XRHIShaderResourceView* GBufferNormal;
+		XRHIShaderResourceView* SceneDepthInput;
+		XRHIShaderResourceView* VirtualShadowMapTileTable;
+		XRHIShaderResourceView* PhysicalShadowDepthTexture;
+
+		XRHIUnorderedAcessView* VirtualShadowMapMaskTexture;
+	};
+
+	XVSMShadowMaskGenCS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
+	{
+		cbView.Bind(Initializer.ShaderParameterMap, "cbView");
+		CbShadowViewInfo.Bind(Initializer.ShaderParameterMap, "CbShadowViewInfo");
+
+		GBufferNormal.Bind(Initializer.ShaderParameterMap, "GBufferNormal");
+		SceneDepthInput.Bind(Initializer.ShaderParameterMap, "SceneDepthInput");
+		VirtualShadowMapTileTable.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTable");
+		PhysicalShadowDepthTexture.Bind(Initializer.ShaderParameterMap, "PhysicalShadowDepthTexture");
+
+		VirtualShadowMapMaskTexture.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapMaskTexture");
+	}
+
+	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters)
+	{
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, cbView, ShaderParameters.cbView);
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, CbShadowViewInfo, ShaderParameters.CbShadowViewInfo);
+
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, GBufferNormal, ShaderParameters.GBufferNormal);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, SceneDepthInput, ShaderParameters.SceneDepthInput);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, PhysicalShadowDepthTexture, ShaderParameters.PhysicalShadowDepthTexture);
+		
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapMaskTexture, ShaderParameters.VirtualShadowMapMaskTexture);
+	}
+
+	CBVParameterType cbView;
+	CBVParameterType CbShadowViewInfo;
+
+	SRVParameterType GBufferNormal;
+	SRVParameterType SceneDepthInput;
+	SRVParameterType VirtualShadowMapTileTable;
+	SRVParameterType PhysicalShadowDepthTexture;
+
+	UAVParameterType VirtualShadowMapMaskTexture;
+};
+XVSMShadowMaskGenCS::ShaderInfos XVSMShadowMaskGenCS::StaticShaderInfos("VSMShadowMaskGenCS", GET_SHADER_PATH("VirtualShadowMapShadowMaskGen.hlsl"), "VSMShadowMaskGenCS", EShaderType::SV_Compute, XVSMShadowMaskGenCS::CustomConstrucFunc, XVSMShadowMaskGenCS::ModifyShaderCompileSettings);
+
 
 class XVirtualShadowMapRenderingVS :public XGloablShader
 {
@@ -562,16 +637,11 @@ public:
 	static ShaderInfos StaticShaderInfos;
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
 public:
-	struct SParameters
-	{
-		XRHIShaderResourceView* ShadowTileViewParameters;
-	};
 
-	XVirtualShadowMapRenderingVS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer) { ShadowTileViewParameters.Bind(Initializer.ShaderParameterMap, "ShadowTileViewParameters"); }
-	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters) { SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, ShadowTileViewParameters, ShaderParameters.ShadowTileViewParameters); }
-	SRVParameterType ShadowTileViewParameters;
+	XVirtualShadowMapRenderingVS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer) {}
+	void SetParameters(XRHICommandList& RHICommandList) {}
 };
-XVirtualShadowMapRenderingVS::ShaderInfos XVirtualShadowMapRenderingVS::StaticShaderInfos("VSMVS", GET_SHADER_PATH("VirtualShadowMapRendering.hlsl"), "VSMVS", EShaderType::SV_Vertex, XVirtualShadowMapRenderingVS::CustomConstrucFunc, XVirtualShadowMapRenderingVS::ModifyShaderCompileSettings);
+XVirtualShadowMapRenderingVS::ShaderInfos XVirtualShadowMapRenderingVS::StaticShaderInfos("VSMVS", GET_SHADER_PATH("VirtualShadowMapRenderingVS.hlsl"), "VSMVS", EShaderType::SV_Vertex, XVirtualShadowMapRenderingVS::CustomConstrucFunc, XVirtualShadowMapRenderingVS::ModifyShaderCompileSettings);
 
 class XVirtualShadowMapRenderingPS :public XGloablShader
 {
@@ -582,24 +652,25 @@ public:
 public:
 	struct SParameters
 	{
-		XRHIShaderResourceView* PhysicalShadowDepthTexture;
-		XRHIUnorderedAcessView* VirtualShadowMapTileTable;
+		XRHIShaderResourceView* VirtualShadowMapTileTable;
+		XRHIUnorderedAcessView* PhysicalShadowDepthTexture;
 	};
 
 	XVirtualShadowMapRenderingPS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer) 
 	{ 
-		PhysicalShadowDepthTexture.Bind(Initializer.ShaderParameterMap, "PhysicalShadowDepthTexture");
 		VirtualShadowMapTileTable.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTable");
+		PhysicalShadowDepthTexture.Bind(Initializer.ShaderParameterMap, "PhysicalShadowDepthTexture");
 	}
 	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters) 
 	{ 
-		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, PhysicalShadowDepthTexture, ShaderParameters.PhysicalShadowDepthTexture);
-		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Pixel, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Pixel, PhysicalShadowDepthTexture, ShaderParameters.PhysicalShadowDepthTexture);
 	}
-	SRVParameterType PhysicalShadowDepthTexture;
-	UAVParameterType VirtualShadowMapTileTable;
+
+	SRVParameterType VirtualShadowMapTileTable;
+	UAVParameterType PhysicalShadowDepthTexture;
 };
-XVirtualShadowMapRenderingPS::ShaderInfos XVirtualShadowMapRenderingPS::StaticShaderInfos("VSMPS", GET_SHADER_PATH("VirtualShadowMapRendering.hlsl"), "VSMPS", EShaderType::SV_Pixel, XVirtualShadowMapRenderingPS::CustomConstrucFunc, XVirtualShadowMapRenderingPS::ModifyShaderCompileSettings);
+XVirtualShadowMapRenderingPS::ShaderInfos XVirtualShadowMapRenderingPS::StaticShaderInfos("VSMPS", GET_SHADER_PATH("VirtualShadowMapRenderingPS.hlsl"), "VSMPS", EShaderType::SV_Pixel, XVirtualShadowMapRenderingPS::CustomConstrucFunc, XVirtualShadowMapRenderingPS::ModifyShaderCompileSettings);
 
 
 class XVirtualShadowMapVisualize :public XGloablShader
@@ -681,19 +752,109 @@ public:
 };
 XVirtualShadowMapVisualize::ShaderInfos XVirtualShadowMapVisualize::StaticShaderInfos("VSMVisualizeCS", GET_SHADER_PATH("VirtualShadowMapVisualize.hlsl"), "VSMVisualizeCS", EShaderType::SV_Compute, XVirtualShadowMapVisualize::CustomConstrucFunc, XVirtualShadowMapVisualize::ModifyShaderCompileSettings);
 
+static const uint32 MipLevelSize[3] = { 32,16,8 };
+static const uint32 MipLevelOffset[3] = { 0,32 * 32, 32 * 32 + 16 * 16 };
+static bool bInit = false;
+
+static void MipTilesShadowViewProjMatrixBuild(XBoundSphere& SceneBoundingSphere, XMatrix& LightViewMatIn, XVector3 MainLightDir)
+{
+	// See XDeferredShadingRenderer::ViewInfoUpdate(GCamera& CameraIn)
+	MainLightDir.Normalize();
+	XVector3 LightPos = SceneBoundingSphere.Center + MainLightDir * SceneBoundingSphere.Radius * 1.0;
+
+	float l = SceneBoundingSphere.Center.x - SceneBoundingSphere.Radius;
+	float r = SceneBoundingSphere.Center.x + SceneBoundingSphere.Radius;
+	float t = SceneBoundingSphere.Center.y + SceneBoundingSphere.Radius;
+	float b = SceneBoundingSphere.Center.y - SceneBoundingSphere.Radius;
+	float f = SceneBoundingSphere.Radius * 2;
+	float n = 0.1f;
+
+	XVector3 UpTemp(0, 1, 0);
+	XVector3 WDir = -MainLightDir; WDir.Normalize();
+	XVector3 UDir = UpTemp.Cross(WDir); UDir.Normalize();
+	XVector3 VDir = WDir.Cross(UDir); VDir.Normalize();
+
+	uint32 ResourceSize = sizeof(SLightSubProjectMatrix) * (32 * 32 + 16 * 16 + 8 * 8);
+
+	std::vector<SLightSubProjectMatrix> ShadowTileViewParametersCPU;
+	ShadowTileViewParametersCPU.resize(32 * 32 + 16 * 16 + 8 * 8);
+
+	if (!bInit)
+	{
+		for (uint32 MipIndex = 0; MipIndex < VSM_MIP_NUM; MipIndex++)
+		{
+			uint32 MipTileWidth = VSM_TILE_MAX_MIP_NUM_XY << (VSM_MIP_NUM - (MipIndex + 1));
+			float TileSize = SceneBoundingSphere.Radius * 2 / (float)(MipTileWidth);
+
+			for (uint32 IndexX = 0; IndexX < MipTileWidth; IndexX++)
+			{
+				for (uint32 IndexY = 0; IndexY < MipTileWidth; IndexY++)
+				{
+					XMatrix TempSubLightProj = XMatrix::CreateOrthographicOffCenterLH(
+						-TileSize * 0.5, TileSize * 0.5,
+						-TileSize * 0.5, TileSize * 0.5,
+						f, n);
+
+					float SubL = l + (r - l) * ((IndexX) / float(MipTileWidth));
+					float SubR = SubL + TileSize;
+					float SubT = t - (t - b) * ((IndexY) / float(MipTileWidth));
+					float SubB = SubT - TileSize;
+					XVector3 SubLightPos = LightPos + UDir * (SubL + SubR) * 0.5 + VDir * (SubB + SubT) * 0.5;
+					XMatrix SubLightMatrix = LightViewMatIn;
+
+					XVector3 NegEyePosition = -SubLightPos;
+					float NegQU = UDir.Dot(NegEyePosition);
+					float NegQV = VDir.Dot(NegEyePosition);
+					float NegQW = WDir.Dot(NegEyePosition);
+
+					SubLightMatrix.m[3][0] = NegQU;
+					SubLightMatrix.m[3][1] = NegQV;
+					SubLightMatrix.m[3][2] = NegQW;
+
+
+					XMatrix ViewProject = SubLightMatrix * TempSubLightProj;
+					ShadowTileViewParametersCPU[MipLevelOffset[MipIndex] + (IndexY * MipLevelSize[MipIndex] + IndexX)].LightViewProjectMatrix = ViewProject;
+					ShadowTileViewParametersCPU[MipLevelOffset[MipIndex] + (IndexY * MipLevelSize[MipIndex] + IndexX)].MipLevel = MipIndex;
+					ShadowTileViewParametersCPU[MipLevelOffset[MipIndex] + (IndexY * MipLevelSize[MipIndex] + IndexX)].VirtualTableIndexX = IndexX;
+					ShadowTileViewParametersCPU[MipLevelOffset[MipIndex] + (IndexY * MipLevelSize[MipIndex] + IndexX)].VirtualTableIndexY = IndexY;
+				}
+			}
+		}
+
+		
+		for (uint32 IDX = 0; IDX < ShadowTileViewParametersCPU.size(); IDX++)
+		{
+			if (ShadowTileViewParametersCPU[IDX].VirtualTableIndexX > 40)
+			{
+				int DebugVar = 0;
+			}
+		}
+
+		VirtualShadowMapResource.LightSubProjectMatrix->UpdateData(ShadowTileViewParametersCPU.data(), ResourceSize, 0);
+		bInit = true;
+	}
+};
 
 
 void XDeferredShadingRenderer::VirutalShadowMapSetup()
 {
+
 	std::vector<XRHIIndirectArg> IndirectShadowArgs;
-	IndirectShadowArgs.resize(4);
-	IndirectShadowArgs[0].type = IndirectArgType::Arg_CBV;
+	IndirectShadowArgs.resize(6);
 	// Proority SRV > UAV > CBV
-	// We has a srv and a uav, so the cbv is 3
-	IndirectShadowArgs[0].CBV.RootParameterIndex = 3;
-	IndirectShadowArgs[1].type = IndirectArgType::Arg_VBV;
-	IndirectShadowArgs[2].type = IndirectArgType::Arg_IBV;
-	IndirectShadowArgs[3].type = IndirectArgType::Arg_Draw_Indexed;
+	// We has a srv and a uav, so the cbv is 2
+	IndirectShadowArgs[0].type = IndirectArgType::Arg_CBV;
+	IndirectShadowArgs[0].CBV.RootParameterIndex = 2;
+
+	IndirectShadowArgs[1].type = IndirectArgType::Arg_CBV;
+	IndirectShadowArgs[1].CBV.RootParameterIndex = 3;
+
+	IndirectShadowArgs[2].type = IndirectArgType::Arg_CBV;
+	IndirectShadowArgs[2].CBV.RootParameterIndex = 4;
+
+	IndirectShadowArgs[3].type = IndirectArgType::Arg_VBV;
+	IndirectShadowArgs[4].type = IndirectArgType::Arg_IBV;
+	IndirectShadowArgs[5].type = IndirectArgType::Arg_Draw_Indexed;
 
 	TShaderReference<XVirtualShadowMapRenderingVS> VertexShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingVS>();
 	TShaderReference<XVirtualShadowMapRenderingPS> PixelShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingPS>();
@@ -705,7 +866,9 @@ void XDeferredShadingRenderer::VirutalShadowMapSetup()
 	{
 		auto& it = RenderGeos[i];
 		RHICmdData[i].CBVs.push_back(it->GetAndUpdatePerObjectVertexCBuffer().get());
-		
+		RHICmdData[i].CBVs.push_back(VirtualShadowMapResource.LightSubProjectMatrix.get());
+		RHICmdData[i].CBVs.push_back(VirtualShadowMapResource.LightSubProjectMatrix.get());
+
 		auto VertexBufferPtr = it->GetRHIVertexBuffer();
 		auto IndexBufferPtr = it->GetRHIIndexBuffer();
 		RHICmdData[i].VB = VertexBufferPtr.get();
@@ -726,8 +889,9 @@ void XDeferredShadingRenderer::VirutalShadowMapSetup()
 	ShadowIndirectBufferData.SetResourceDataSize(ShadowCommandUnculledSize);
 	XRHIResourceCreateData IndirectBufferResourceData(&ShadowIndirectBufferData);
 	VirtualShadowMapResource.VirtualShadowMapCommnadBufferUnculled.Create(OutCmdDataSize, ShadowCommandUnculledSize, IndirectBufferResourceData);
-	VirtualShadowMapResource.VirtualShadowMapCommnadBufferCulled.Create(OutCmdDataSize, ShadowCommandUnculledSize, nullptr);
+	VirtualShadowMapResource.VirtualShadowMapCommnadBufferCulled.Create(OutCmdDataSize, ShadowCommandUnculledSize * 16, nullptr);
 }
+
 
 void XDeferredShadingRenderer::VirtualShadowMapUpdate()
 {
@@ -743,6 +907,7 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 	SShadowViewInfo VirtualShadowMapInfo;
 	VirtualShadowMapInfo.LighgViewProject = LightViewProjMat;
 	VirtualShadowMapInfo.WorldCameraPosition = RViewInfo.ViewMats.GetViewOrigin();
+	VirtualShadowMapInfo.ShadowLightDir = ShadowLightDir;
 	VirtualShadowMapResource.VSMTileShadowViewConstantBuffer->UpdateData(&VirtualShadowMapInfo, sizeof(SShadowViewInfo), 0);
 
 	SVSMClearParameters VSMClearParameters;
@@ -781,6 +946,7 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 		RHICmdList.RHIEventEnd();
 	}
 
+	
 	VirtualShadowMapTileMark(RHICmdList);
 	VirtualShadowMapUpdateTileAction(RHICmdList);
 	VirtualShadowMapPhysicalTileManage(RHICmdList);
@@ -870,6 +1036,8 @@ void XDeferredShadingRenderer::VirtualShadowMapPhysicalTileManage(XRHICommandLis
 
 void XDeferredShadingRenderer::VirtualShadowMapBuildCmd(XRHICommandList& RHICmdList)
 {
+	MipTilesShadowViewProjMatrixBuild(SceneBoundingSphere, LightViewMat, ShadowLightDir);
+
 	RHICmdList.RHIEventBegin(1, "VSMTileCmdBuildCS", sizeof("VSMTileCmdBuildCS"));
 	TShaderReference<XVirtualShadowMapCmdBuild> VSMTileCmdBuildCS = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapCmdBuild>();
 	SetComputePipelineStateFromCS(RHICmdList, VSMTileCmdBuildCS.GetComputeShader());
@@ -917,9 +1085,61 @@ void XDeferredShadingRenderer::VirtualShadowMapProjection(XRHICommandList& RHICm
 		RHICmdList.RHIEventEnd();
 	}
 
-	// waw resource
-	//RHICmdList.TransitionResource();
+	// WAW Resource
+	RHICmdList.TransitionResource(SceneTargets.PhysicalShadowDepthTexture, EResourceAccessFlag::RAF_UNKOWN, EResourceAccessFlag::RAF_COMMON);
 	
+	static bool IsFirstFram = true;
+
+	//Indirect Draw
+	{
+		XRHITexture* PlaceHodeltargetTex = VirtualShadowMapResource.PlaceHodeltarget.get();
+		XRHIRenderPassInfo RPInfos(1, &PlaceHodeltargetTex, ERenderTargetLoadAction::EClear, nullptr, EDepthStencilLoadAction::ENoAction);
+		RHICmdList.RHIBeginRenderPass(RPInfos, "VSMIndirectDraw", sizeof("VSMIndirectDraw"));
+		RHICmdList.CacheActiveRenderTargets(RPInfos);
+		
+		XGraphicsPSOInitializer GraphicsPSOInit;
+		GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+		GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<>::GetRHI();
+		GraphicsPSOInit.RasterState = TStaticRasterizationState<>::GetRHI();
+		
+		TShaderReference<XVirtualShadowMapRenderingVS> VertexShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingVS>();
+		TShaderReference<XVirtualShadowMapRenderingPS> PixelShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingPS>();
+		GraphicsPSOInit.BoundShaderState.RHIVertexShader = VertexShader.GetVertexShader();
+		GraphicsPSOInit.BoundShaderState.RHIPixelShader = PixelShader.GetPixelShader();
+		std::shared_ptr<XRHIVertexLayout> RefVertexLayout = DefaultVertexFactory.GetLayout(ELayoutType::Layout_Default);
+		GraphicsPSOInit.BoundShaderState.RHIVertexLayout = RefVertexLayout.get();
+		
+		RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+		SetGraphicsPipelineStateFromPSOInit(RHICmdList, GraphicsPSOInit);
+
+		XVirtualShadowMapRenderingPS::SParameters PixelParameters;
+		PixelParameters.PhysicalShadowDepthTexture = GetRHIUAVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get());
+		PixelParameters.VirtualShadowMapTileTable = VirtualShadowMapResource.GetVSMTileTableSRV(false);
+		PixelShader->SetParameters(RHICmdList, PixelParameters);
+
+		RHICmdList.RHIExecuteIndirect(VirtualShadowMapResource.RHIShadowCommandSignature.get(), RenderGeos.size() * 16,
+			VirtualShadowMapResource.VirtualShadowMapCommnadBufferCulled.GetBuffer().get(), 0,
+			VirtualShadowMapResource.VirtualShadowMapCommnadCounter.GetBuffer().get(), 0);
+		RHICmdList.RHIEndRenderPass();
+	}
+
+	{
+		RHICmdList.RHIEventBegin(1, "VSMShadowMaskGenCS", sizeof("VSMShadowMaskGenCS"));
+		TShaderReference<XVSMShadowMaskGenCS> VSMShadowMaskGenCS = GetGlobalShaderMapping()->GetShader<XVSMShadowMaskGenCS>();
+		XRHIComputeShader* ComputeShader = VSMShadowMaskGenCS.GetComputeShader();
+		SetComputePipelineStateFromCS(RHICmdList, ComputeShader);
+		XVSMShadowMaskGenCS::SParameters Parameters;
+		Parameters.cbView = RViewInfo.ViewConstantBuffer.get();
+		Parameters.CbShadowViewInfo = VirtualShadowMapResource.VSMTileShadowViewConstantBuffer.get();
+		Parameters.GBufferNormal = GetRHISRVFromTexture(SceneTargets.TextureGBufferA.get());
+		Parameters.SceneDepthInput = GetRHISRVFromTexture(SceneTargets.TextureDepthStencil.get());
+		Parameters.VirtualShadowMapTileTable = VirtualShadowMapResource.GetVSMTileTableSRV(false);
+		Parameters.PhysicalShadowDepthTexture = GetRHISRVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get());
+		Parameters.VirtualShadowMapMaskTexture = GetRHIUAVFromTexture(SceneTargets.VSMShadowMaskTexture.get());
+		VSMShadowMaskGenCS->SetParameters(RHICmdList, Parameters);
+		RHICmdList.RHIDispatchComputeShader(static_cast<uint32>(ceil(RViewInfo.ViewWidth / 16)), static_cast<uint32>(ceil(RViewInfo.ViewHeight / 16)), 1);
+		RHICmdList.RHIEventEnd();
+	}
 
 }
 

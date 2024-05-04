@@ -86,6 +86,8 @@ public:
 	void VSMShadowCommandBuild_Deprecated(XRHICommandList& RHICmdList);
 	void VirtualShadowMapGen_Deprecated(XRHICommandList& RHICmdList);
 	void VSMTileMaskClear_Deprecated(XRHICommandList& RHICmdList);
+	//Shadow Mask Generate
+	void ShadowMaskGenerate_Deprecated(XRHICommandList& RHICmdList);
 
 	//HZBPass
 	void HZBPass(XRHICommandList& RHICmdList);
@@ -97,8 +99,7 @@ public:
 	//BasePass Rendering
 	void BasePassRendering(XRHICommandList& RHICmdList);
 
-	//Shadow Mask Generate
-	void ShadowMaskGenerate(XRHICommandList& RHICmdList);
+
 
 	//LightPass
 	void LightPass(XRHICommandList& RHICmdList);

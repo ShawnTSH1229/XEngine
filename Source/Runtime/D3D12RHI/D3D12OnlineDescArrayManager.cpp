@@ -22,6 +22,11 @@ template void XD3D12OnlineDescArrayManager::SetRootDescCBVs<EShaderType::SV_Comp
 	XD3D12CBVRootDescManager* gpu_virtual_ptr_array,
 	uint16& slot_mask);
 
+template void XD3D12OnlineDescArrayManager::SetDescTableSRVs<EShaderType::SV_Vertex>(
+	const XD3D12RootSignature* root_signature,
+	XD3D12PassShaderResourceManager* SRVManager,
+	uint32& slot_start, uint64& slot_mask);
+
 template void XD3D12OnlineDescArrayManager::SetDescTableSRVs<EShaderType::SV_Pixel>(
 	const XD3D12RootSignature* root_signature,
 	XD3D12PassShaderResourceManager* SRVManager,

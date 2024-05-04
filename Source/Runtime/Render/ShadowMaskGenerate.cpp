@@ -89,7 +89,7 @@ public:
 };
 TGlobalResource<XShadowMaskGenResourece>ShadowMaskGenResourece;
 
-void XDeferredShadingRenderer::ShadowMaskGenerate(XRHICommandList& RHICmdList)
+void XDeferredShadingRenderer::ShadowMaskGenerate_Deprecated(XRHICommandList& RHICmdList)
 {
 	ShadowLightDir.Normalize();
 	ShadowMaskGenStruct ShadowMaskGenIns;
