@@ -16,7 +16,15 @@
 //Temps
 #include "Runtime/Core/Mesh/GeomertyData.h"
 #include "Runtime/Core/ComponentNode/Camera.h"
-//
+
+struct GlobalPerObjectConstants
+{
+	XMatrix World;
+	XVector3 BoundingBoxCenter;
+	uint32 isDynamicObejct = 0;
+	XVector3 BoundingBoxExtent;
+	float padding1 = 1.0f;
+};
 
 class XDefaultVertexFactory :public XVertexFactory
 {
@@ -65,6 +73,8 @@ public:
 	void VirtualShadowMapTileMark(XRHICommandList& RHICmdList);
 	void VirtualShadowMapUpdateTileAction(XRHICommandList& RHICmdList);
 	void VirtualShadowMapPhysicalTileManage(XRHICommandList& RHICmdList);
+	void VirtualShadowMapBuildCmd(XRHICommandList& RHICmdList);
+	void VirtualShadowMapProjection(XRHICommandList& RHICmdList);
 	void VirtualShadowMapVisualize(XRHICommandList& RHICmdList);
 
 	//Virtual Shadow Map Generate
@@ -121,7 +131,6 @@ private:
 	XSkyAtmosphereParams cbSkyAtmosphereIns;
 	XEditorUI EditorUI;
 
-	std::vector<GlobalPerObjectConstants> GlobalObjectDataCPU;
 	std::shared_ptr<XRHIStructBuffer>GlobalObjectStructBuffer;
 	std::shared_ptr<XRHIShaderResourceView>GlobalObjectStructBufferSRV;
 public:

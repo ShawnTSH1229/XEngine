@@ -1,4 +1,4 @@
-//todo: add a depth clear pass
+#include "VirtualShadowMapCommon.hlsl"
 
 cbuffer cbPerObject
 {
@@ -16,17 +16,18 @@ struct SVSinput
     float4	Position	: ATTRIBUTE0;
 };
 
-void VS(SVSinput Input, uint InstanceID : SV_InstanceID, out float4 Position : SV_POSITION, out nointerpolation uint InstanceIndex : TEXCOORD0)
+void VSMVS(SVSinput Input, uint InstanceID : SV_InstanceID, out float4 Position : SV_POSITION, out nointerpolation uint InstanceIndex : TEXCOORD0)
 {
     float4 PositionW = mul( Input.Position, gWorld);
     SShadowViewInfo ShadowViewInfo = ShadowTileViewParameters[InstanceID];
     Position = mul(PositionW, ShadowViewInfo.ShadowViewProject);
+    InstanceIndex = InstanceID;
 }
 
 RWTexture2D<uint> PhysicalShadowDepthTexture; // 4096 * 4096
 StructuredBuffer<uint> VirtualShadowMapTileTable; // 24 bit
 
-void PS(in float4 PositionIn: SV_POSITION, in nointerpolation uint InstanceIndex : TEXCOORD0, out float PlaceHolderTarget : SV_TARGET)
+void VSMPS(in float4 PositionIn: SV_POSITION, in nointerpolation uint InstanceIndex : TEXCOORD0, out float PlaceHolderTarget : SV_TARGET)
 {
     if( PositionIn.z < 0.0f || PositionIn.z > 1.0f)
     {
@@ -35,17 +36,17 @@ void PS(in float4 PositionIn: SV_POSITION, in nointerpolation uint InstanceIndex
     }
 
     uint TileInfo = VirtualShadowMapTileTable[InstanceIndex];
-    uint PhysicalTileIndexX = (TileInfo >>  8) & 0xFF;
-    uint PhysicalTileIndexY = (TileInfo >> 16) & 0xFF;
+    uint PhysicalTileIndexX = (TileInfo >>  0) & 0xFFFF;
+    uint PhysicalTileIndexY = (TileInfo >> 16) & 0xFFFF;
 
-    float2 IndexXY = uint2(IndexX,IndexY) * VSM_TILE_TEX_PHYSICAL_SIZE;
+    float2 IndexXY = uint2(PhysicalTileIndexX, PhysicalTileIndexY) * VSM_TILE_TEX_PHYSICAL_SIZE;
     float2 WritePos = IndexXY + PositionIn.xy;
     double FixedPointDepth = double(PositionIn.z) * uint(0xFFFFFFFF);
     uint UintDepth = FixedPointDepth; //float Point to fixed point
 
     InterlockedMax(PhysicalShadowDepthTexture[uint2(WritePos)],UintDepth);
 
-    PlaceHolderTarget = 0.0f;
+    PlaceHolderTarget = isDynamicObejct ? 0.0f : 1.0f;
 }
 
 

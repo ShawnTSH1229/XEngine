@@ -412,7 +412,7 @@ void XDeferredShadingRenderer::VirtualShadowMapGen_Deprecated(XRHICommandList& R
 	//
 	//RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
 	//SetGraphicsPipelineStateFromPSOInit(RHICmdList, GraphicsPSOInit);
-	//PixelShader->SetParameters(RHICmdList, GetRHIUAVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get()), GetRHISRVFromTexture(SceneTargets.PagetableInfos.get()));
+	//PixelShader->SetParameters(RHICmdList, GetRHIUAVFromTexture(SceneTargets.PhysicalShadowDepthTexture.get()), GetRHISRVFromTexture(SceneTargets.PagetableInfos.get())); 
 	//RHICmdList.RHIExecuteIndirect(VirtualShadowMapResourece.RHIShadowCommandSignature.get(), RenderGeos.size() * 12,
 	//	VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCmdBufferOffset, 
 	//	VirtualShadowMapResourece.ShadowCmdBufferCulled.get(), VirtualShadowMapResourece.ShadowCounterOffset);

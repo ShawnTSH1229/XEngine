@@ -111,6 +111,7 @@ std::shared_ptr<XRHIConstantBuffer> GGeomertry::GetAndUpdatePerObjectVertexCBuff
 	VertexCB.WorldMatrix = GetWorldTransform().GetCombineMatrix();
 	VertexCB.BoundBoxMax = GetBoudingBoxWithTrans().Center + GetBoudingBoxWithTrans().Extent;
 	VertexCB.BoundBoxMin = GetBoudingBoxWithTrans().Center - GetBoudingBoxWithTrans().Extent;
+	VertexCB.bDynamicObject = GetObjectMovable() ? 1 : 0;
 
 	PerObjectVertexCBuffer->UpdateData(&VertexCB, sizeof(VertexCBufferStruct), 0);
 

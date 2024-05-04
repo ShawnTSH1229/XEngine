@@ -29,6 +29,12 @@ __declspec(align(256)) struct SVSMVisualizeParameters
 	uint32 DispatchSizeZ;
 };
 
+__declspec(align(256)) struct SCullingParameters
+{
+	XMatrix ShadowViewProject;
+	uint32 MeshCount;
+};
+
 struct SVirtualShadowMapStructBuffer
 {
 	std::shared_ptr <XRHIStructBuffer> Buffer;
@@ -53,6 +59,7 @@ public:
 	std::shared_ptr<XRHIConstantBuffer> VSMClearParameters;
 	std::shared_ptr<XRHIConstantBuffer> VSMVisualizeParameters;
 	std::shared_ptr<XRHIConstantBuffer> VSMTileShadowViewConstantBuffer;
+	std::shared_ptr<XRHIConstantBuffer> VSMCullingParameters;
 
 	std::shared_ptr <XRHIStructBuffer> VirtualShadowMapTileStateCacheMiss;
 	std::shared_ptr<XRHIUnorderedAcessView> VirtualShadowMapTileStateCacheMissUAV;
@@ -63,6 +70,14 @@ public:
 	SVirtualShadowMapStructBuffer VirtualShadowMapFreeTileList;
 	SVirtualShadowMapStructBuffer VirtualShadowMapFreeListStart;
 
+	std::shared_ptr<XRHICommandSignature>RHIShadowCommandSignature;
+	std::shared_ptr<XRHITexture2D>PlaceHodeltarget;
+
+	SVirtualShadowMapStructBuffer VirtualShadowMapCommnadBufferUnculled;
+	SVirtualShadowMapStructBuffer VirtualShadowMapCommnadBufferCulled;
+	SVirtualShadowMapStructBuffer VirtualShadowMapCommnadCounter;	
+
+	std::shared_ptr<XRHITexture2D> PhysicalShadowDepthTexture;
 
 	void InitRHI()override
 	{
@@ -77,6 +92,7 @@ public:
 		VSMClearParameters = RHICreateConstantBuffer(sizeof(SVSMClearParameters));
 		VSMVisualizeParameters = RHICreateConstantBuffer(sizeof(SVSMVisualizeParameters));
 		VSMTileShadowViewConstantBuffer = RHICreateConstantBuffer(sizeof(SShadowViewInfo));
+		VSMCullingParameters = RHICreateConstantBuffer(sizeof(SCullingParameters));
 
 		for (int Index = 0; Index < 2; Index++)
 		{
@@ -111,6 +127,9 @@ public:
 		VirtualShadowMapFreeTileList.Create(sizeof(uint32), sizeof(uint32) * VSM_TEX_PHYSICAL_WH* VSM_TEX_PHYSICAL_WH, SrcData);
 
 		VirtualShadowMapFreeListStart.Create(sizeof(uint32), 4096, nullptr);
+		VirtualShadowMapCommnadCounter.Create(sizeof(uint32), 4096, nullptr);
+
+		PhysicalShadowDepthTexture = ;
 	}
 
 	std::shared_ptr <XRHIStructBuffer> GetVSMTileStateBuffer(bool bPrevious) { return VirtualShadowMapTileState[(bPrevious ? ((BufferIndex + 1) % 2) : BufferIndex)]; };
@@ -143,16 +162,9 @@ TGlobalResource<XVirtualShadowMapResource> VirtualShadowMapResource;
 class XVirtualShadowMapResourceClear :public XGloablShader
 {
 public:
-
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapResourceClear(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapResourceClear(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	struct SParameters
 	{
@@ -163,6 +175,8 @@ public:
 		
 		XRHIUnorderedAcessView* VirtualShadowMapTileTable;
 		XRHIUnorderedAcessView* VirtualShadowMapTileAction;
+
+		XRHIUnorderedAcessView* CommandCounterBuffer;
 	};
 
 	XVirtualShadowMapResourceClear(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
@@ -170,6 +184,9 @@ public:
 		VSMClearParameters.Bind(Initializer.ShaderParameterMap, "VSMClearParameters");
 		VirtualShadowMapTileState.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileState");
 		VirtualShadowMapTileStateCacheMiss.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileStateCacheMiss");
+		VirtualShadowMapTileTable.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTable");
+		VirtualShadowMapTileAction.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileAction");
+		CommandCounterBuffer.Bind(Initializer.ShaderParameterMap, "CommandCounterBuffer");
 	}
 
 	void SetParameters(XRHICommandList& RHICommandList, SParameters Parameters)
@@ -177,13 +194,17 @@ public:
 		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, VSMClearParameters, Parameters.VirtualShadowmapClearParameters);
 		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, Parameters.VirtualShadowMapTileState);
 		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileStateCacheMiss, Parameters.VirtualShadowMapTileStateCacheMiss);
-		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileState, Parameters.VirtualShadowMapTileState);
-		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileStateCacheMiss, Parameters.VirtualShadowMapTileStateCacheMiss);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, Parameters.VirtualShadowMapTileTable);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileAction, Parameters.VirtualShadowMapTileAction);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, CommandCounterBuffer, Parameters.CommandCounterBuffer);
 	}
 
 	CBVParameterType VSMClearParameters;
 	UAVParameterType VirtualShadowMapTileState;
 	UAVParameterType VirtualShadowMapTileStateCacheMiss;
+	UAVParameterType VirtualShadowMapTileTable;
+	UAVParameterType VirtualShadowMapTileAction;
+	UAVParameterType CommandCounterBuffer;
 };
 XVirtualShadowMapResourceClear::ShaderInfos XVirtualShadowMapResourceClear::StaticShaderInfos("VSMResourceClear", GET_SHADER_PATH("VirtualShadowMapResourceClear.hlsl"), "VSMResourceClear", EShaderType::SV_Compute, XVirtualShadowMapResourceClear::CustomConstrucFunc, XVirtualShadowMapResourceClear::ModifyShaderCompileSettings);
 
@@ -191,16 +212,9 @@ XVirtualShadowMapResourceClear::ShaderInfos XVirtualShadowMapResourceClear::Stat
 class XVirtualShadowMapTileMark :public XGloablShader
 {
 public:
-	
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapTileMark(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapTileMark(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-	
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	XVirtualShadowMapTileMark(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
 	{
@@ -229,16 +243,9 @@ XVirtualShadowMapTileMark::ShaderInfos XVirtualShadowMapTileMark::StaticShaderIn
 class XVirtualShadowMapTileCacheMiss :public XGloablShader
 {
 public:
-
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapTileCacheMiss(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapTileCacheMiss(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	XVirtualShadowMapTileCacheMiss(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
 	{
@@ -264,16 +271,9 @@ XVirtualShadowMapTileCacheMiss::ShaderInfos XVirtualShadowMapTileCacheMiss::Stat
 class XVirtualShadowMapUpdateTileAction :public XGloablShader
 {
 public:
-
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapUpdateTileAction(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapUpdateTileAction(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	struct SParameters
 	{
@@ -326,15 +326,9 @@ XVirtualShadowMapUpdateTileAction::ShaderInfos XVirtualShadowMapUpdateTileAction
 class XVirtualShadowMapPhysicalTileAlloc :public XGloablShader
 {
 public:
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapPhysicalTileAlloc(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapPhysicalTileAlloc(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	struct SParameters
 	{
@@ -374,15 +368,9 @@ XVirtualShadowMapPhysicalTileAlloc::ShaderInfos XVirtualShadowMapPhysicalTileAll
 class XVirtualShadowMapPhysicalTileRelease :public XGloablShader
 {
 public:
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapPhysicalTileRelease(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapPhysicalTileRelease(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	struct SParameters
 	{
@@ -423,15 +411,9 @@ XVirtualShadowMapPhysicalTileRelease::ShaderInfos XVirtualShadowMapPhysicalTileR
 class XVirtualShadowMapCmdBuild :public XGloablShader
 {
 public:
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XVirtualShadowMapCmdBuild(Initializer);
-	}
-
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapCmdBuild(Initializer); }
 	static ShaderInfos StaticShaderInfos;
-
 	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
 public:
 	struct SParameters
 	{
@@ -483,6 +465,132 @@ public:
 	UAVParameterType CommandCounterBuffer;
 };
 XVirtualShadowMapCmdBuild::ShaderInfos XVirtualShadowMapCmdBuild::StaticShaderInfos("VSMTileCmdBuildCS", GET_SHADER_PATH("VirtualShadowMapBuildTileCmd.hlsl"), "VSMTileCmdBuildCS", EShaderType::SV_Compute, XVirtualShadowMapCmdBuild::CustomConstrucFunc, XVirtualShadowMapCmdBuild::ModifyShaderCompileSettings);
+
+class XVSMTileTableUpdatedPackCS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVSMTileTableUpdatedPackCS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+
+public:
+	struct SParameters
+	{
+		XRHIShaderResourceView* VirtualShadowMapTileTable;
+		XRHIShaderResourceView* VirtualShadowMapTileAction;
+
+		XRHIUnorderedAcessView* VirtualShadowMapTileTablePacked_UAV;
+		XRHIUnorderedAcessView* TileNeedUpdateCounter_UAV;
+	};
+	
+	XVSMTileTableUpdatedPackCS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
+	{
+		VirtualShadowMapTileTable.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTable");
+		VirtualShadowMapTileAction.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileAction");
+
+		VirtualShadowMapTileTablePacked_UAV.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTablePacked_UAV");
+		TileNeedUpdateCounter_UAV.Bind(Initializer.ShaderParameterMap, "TileNeedUpdateCounter_UAV");
+	}
+
+	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters)
+	{
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileAction, ShaderParameters.VirtualShadowMapTileAction);
+
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTablePacked_UAV, ShaderParameters.VirtualShadowMapTileTablePacked_UAV);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, TileNeedUpdateCounter_UAV, ShaderParameters.TileNeedUpdateCounter_UAV);
+	}
+
+	SRVParameterType VirtualShadowMapTileTable;
+	SRVParameterType VirtualShadowMapTileAction;
+
+	UAVParameterType VirtualShadowMapTileTablePacked_UAV;
+	UAVParameterType TileNeedUpdateCounter_UAV;
+};
+XVSMTileTableUpdatedPackCS::ShaderInfos XVSMTileTableUpdatedPackCS::StaticShaderInfos("VSMTileTableUpdatedPackCS", GET_SHADER_PATH("VirtualShadowMapPhysicalTileClear.hlsl"), "VSMTileTableUpdatedPackCS", EShaderType::SV_Compute, XVSMTileTableUpdatedPackCS::CustomConstrucFunc, XVSMTileTableUpdatedPackCS::ModifyShaderCompileSettings);
+
+class XVSMTileTableClearCS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVSMTileTableClearCS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+
+public:
+	struct SParameters
+	{
+		XRHIShaderResourceView* VirtualShadowMapTileTablePacked_SRV;
+		XRHIShaderResourceView* TileNeedUpdateCounter_SRV;
+		XRHIUnorderedAcessView* PhysicalShadowDepthTexture;
+	};
+
+	XVSMTileTableClearCS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
+	{
+		VirtualShadowMapTileTablePacked_SRV.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTablePacked_SRV");
+		TileNeedUpdateCounter_SRV.Bind(Initializer.ShaderParameterMap, "TileNeedUpdateCounter_SRV");
+		PhysicalShadowDepthTexture.Bind(Initializer.ShaderParameterMap, "PhysicalShadowDepthTexture");
+	}
+
+	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters)
+	{
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTablePacked_SRV, ShaderParameters.VirtualShadowMapTileTablePacked_SRV);
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, TileNeedUpdateCounter_SRV, ShaderParameters.TileNeedUpdateCounter_SRV);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, PhysicalShadowDepthTexture, ShaderParameters.PhysicalShadowDepthTexture);
+	}
+
+	SRVParameterType VirtualShadowMapTileTablePacked_SRV;
+	SRVParameterType TileNeedUpdateCounter_SRV;
+
+	UAVParameterType PhysicalShadowDepthTexture;
+};
+XVSMTileTableClearCS::ShaderInfos XVSMTileTableClearCS::StaticShaderInfos("VSMTileTableClearCS", GET_SHADER_PATH("VirtualShadowMapPhysicalTileClear.hlsl"), "VSMTileTableClearCS", EShaderType::SV_Compute, XVSMTileTableClearCS::CustomConstrucFunc, XVSMTileTableClearCS::ModifyShaderCompileSettings);
+
+
+class XVirtualShadowMapRenderingVS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapRenderingVS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+public:
+	struct SParameters
+	{
+		XRHIShaderResourceView* ShadowTileViewParameters;
+	};
+
+	XVirtualShadowMapRenderingVS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer) { ShadowTileViewParameters.Bind(Initializer.ShaderParameterMap, "ShadowTileViewParameters"); }
+	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters) { SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, ShadowTileViewParameters, ShaderParameters.ShadowTileViewParameters); }
+	SRVParameterType ShadowTileViewParameters;
+};
+XVirtualShadowMapRenderingVS::ShaderInfos XVirtualShadowMapRenderingVS::StaticShaderInfos("VSMVS", GET_SHADER_PATH("VirtualShadowMapRendering.hlsl"), "VSMVS", EShaderType::SV_Vertex, XVirtualShadowMapRenderingVS::CustomConstrucFunc, XVirtualShadowMapRenderingVS::ModifyShaderCompileSettings);
+
+class XVirtualShadowMapRenderingPS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XVirtualShadowMapRenderingPS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+public:
+	struct SParameters
+	{
+		XRHIShaderResourceView* PhysicalShadowDepthTexture;
+		XRHIUnorderedAcessView* VirtualShadowMapTileTable;
+	};
+
+	XVirtualShadowMapRenderingPS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer) 
+	{ 
+		PhysicalShadowDepthTexture.Bind(Initializer.ShaderParameterMap, "PhysicalShadowDepthTexture");
+		VirtualShadowMapTileTable.Bind(Initializer.ShaderParameterMap, "VirtualShadowMapTileTable");
+	}
+	void SetParameters(XRHICommandList& RHICommandList, SParameters ShaderParameters) 
+	{ 
+		SetShaderSRVParameter(RHICommandList, EShaderType::SV_Compute, PhysicalShadowDepthTexture, ShaderParameters.PhysicalShadowDepthTexture);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, VirtualShadowMapTileTable, ShaderParameters.VirtualShadowMapTileTable);
+	}
+	SRVParameterType PhysicalShadowDepthTexture;
+	UAVParameterType VirtualShadowMapTileTable;
+};
+XVirtualShadowMapRenderingPS::ShaderInfos XVirtualShadowMapRenderingPS::StaticShaderInfos("VSMPS", GET_SHADER_PATH("VirtualShadowMapRendering.hlsl"), "VSMPS", EShaderType::SV_Pixel, XVirtualShadowMapRenderingPS::CustomConstrucFunc, XVirtualShadowMapRenderingPS::ModifyShaderCompileSettings);
 
 
 class XVirtualShadowMapVisualize :public XGloablShader
@@ -569,13 +677,47 @@ XVirtualShadowMapVisualize::ShaderInfos XVirtualShadowMapVisualize::StaticShader
 void XDeferredShadingRenderer::VirutalShadowMapSetup()
 {
 	std::vector<XRHIIndirectArg> IndirectShadowArgs;
-
 	IndirectShadowArgs.resize(4);
 	IndirectShadowArgs[0].type = IndirectArgType::Arg_CBV;
-	IndirectShadowArgs[0].CBV.RootParameterIndex = 2;
+	// Proority SRV > UAV > CBV
+	// We has a srv and a uav, so the cbv is 3
+	IndirectShadowArgs[0].CBV.RootParameterIndex = 3;
 	IndirectShadowArgs[1].type = IndirectArgType::Arg_VBV;
 	IndirectShadowArgs[2].type = IndirectArgType::Arg_IBV;
 	IndirectShadowArgs[3].type = IndirectArgType::Arg_Draw_Indexed;
+
+	TShaderReference<XVirtualShadowMapRenderingVS> VertexShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingVS>();
+	TShaderReference<XVirtualShadowMapRenderingPS> PixelShader = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapRenderingPS>();
+	VirtualShadowMapResource.RHIShadowCommandSignature = RHICreateCommandSignature(IndirectShadowArgs.data(), IndirectShadowArgs.size(), VertexShader.GetVertexShader(), PixelShader.GetPixelShader());
+
+	std::vector<XRHICommandData> RHICmdData;
+	RHICmdData.resize(RenderGeos.size());
+	for (int i = 0; i < RenderGeos.size(); i++)
+	{
+		auto& it = RenderGeos[i];
+		RHICmdData[i].CBVs.push_back(it->GetAndUpdatePerObjectVertexCBuffer().get());
+		
+		auto VertexBufferPtr = it->GetRHIVertexBuffer();
+		auto IndexBufferPtr = it->GetRHIIndexBuffer();
+		RHICmdData[i].VB = VertexBufferPtr.get();
+		RHICmdData[i].IB = IndexBufferPtr.get();
+		RHICmdData[i].IndexCountPerInstance = it->GetIndexCount();
+		RHICmdData[i].InstanceCount = 1;
+		RHICmdData[i].StartIndexLocation = 0;
+		RHICmdData[i].BaseVertexLocation = 0;
+		RHICmdData[i].StartInstanceLocation = 0;
+	}
+
+	uint32 OutCmdDataSize;
+	void* DataPtrret = RHIGetCommandDataPtr(RHICmdData, OutCmdDataSize);
+	
+	uint32 ShadowCommandUnculledSize = OutCmdDataSize* RenderGeos.size();
+	FResourceVectorUint8 ShadowIndirectBufferData;
+	ShadowIndirectBufferData.Data = DataPtrret;
+	ShadowIndirectBufferData.SetResourceDataSize(ShadowCommandUnculledSize);
+	XRHIResourceCreateData IndirectBufferResourceData(&ShadowIndirectBufferData);
+	VirtualShadowMapResource.VirtualShadowMapCommnadBufferUnculled.Create(OutCmdDataSize, ShadowCommandUnculledSize, IndirectBufferResourceData);
+	VirtualShadowMapResource.VirtualShadowMapCommnadBufferCulled.Create(OutCmdDataSize, ShadowCommandUnculledSize, nullptr);
 }
 
 void XDeferredShadingRenderer::VirtualShadowMapUpdate()
@@ -600,6 +742,10 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 
 	VirtualShadowMapResource.UpdateBufferIndex();
 
+	SCullingParameters CullParameters;
+	CullParameters.ShadowViewProject = LightViewProjMat;
+	CullParameters.MeshCount = RenderGeos.size();
+	VirtualShadowMapResource.VSMCullingParameters->UpdateData(&CullParameters, sizeof(SCullingParameters), 0);
 	
 	{
 		RHICmdList.RHIEventBegin(1, "VSMResourceClear", sizeof("VSMResourceClear"));
@@ -612,7 +758,7 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 		Parameters.VirtualShadowMapTileStateCacheMiss = VirtualShadowMapResource.VirtualShadowMapTileStateCacheMissUAV.get();
 		Parameters.VirtualShadowMapTileTable = VirtualShadowMapResource.GetVSMTileTableUAV(false);
 		Parameters.VirtualShadowMapTileAction = VirtualShadowMapResource.VirtualShadowMapTileAction.GetUAV();
-
+		Parameters.CommandCounterBuffer = VirtualShadowMapResource.VirtualShadowMapCommnadCounter.GetUAV();
 		VSMResourceClear->SetParameters(RHICmdList, Parameters);
 		RHICmdList.RHIDispatchComputeShader((VSMClearParameters.VirtualShadowMapTileStateSize + ((16 * 16) - 1)) / (16 * 16), 1, 1);
 
@@ -621,13 +767,14 @@ void XDeferredShadingRenderer::VirtualShadowMapRendering(XRHICommandList& RHICmd
 		RHICmdList.TransitionResource(VirtualShadowMapResource.VirtualShadowMapTileStateCacheMiss, EResourceAccessFlag::RAF_UNKOWN, EResourceAccessFlag::RAF_COMMON);
 		RHICmdList.TransitionResource(VirtualShadowMapResource.GetVSMTileTableBuffer(false), EResourceAccessFlag::RAF_UNKOWN, EResourceAccessFlag::RAF_COMMON);
 		RHICmdList.TransitionResource(VirtualShadowMapResource.VirtualShadowMapTileAction.GetBuffer(), EResourceAccessFlag::RAF_UNKOWN, EResourceAccessFlag::RAF_COMMON);
-
+		RHICmdList.TransitionResource(VirtualShadowMapResource.VirtualShadowMapCommnadCounter.GetBuffer(), EResourceAccessFlag::RAF_UNKOWN, EResourceAccessFlag::RAF_COMMON);
 		RHICmdList.RHIEventEnd();
 	}
 
 	VirtualShadowMapTileMark(RHICmdList);
 	VirtualShadowMapUpdateTileAction(RHICmdList);
 	VirtualShadowMapPhysicalTileManage(RHICmdList);
+	VirtualShadowMapBuildCmd(RHICmdList);
 }
 
 void XDeferredShadingRenderer::VirtualShadowMapTileMark(XRHICommandList& RHICmdList)
@@ -708,6 +855,30 @@ void XDeferredShadingRenderer::VirtualShadowMapPhysicalTileManage(XRHICommandLis
 		RHICmdList.RHIDispatchComputeShader(21, 1, 1);
 		RHICmdList.RHIEventEnd();
 	}
+}
+
+void XDeferredShadingRenderer::VirtualShadowMapBuildCmd(XRHICommandList& RHICmdList)
+{
+	RHICmdList.RHIEventBegin(1, "VSMTileCmdBuildCS", sizeof("VSMTileCmdBuildCS"));
+	TShaderReference<XVirtualShadowMapCmdBuild> VSMTileCmdBuildCS = GetGlobalShaderMapping()->GetShader<XVirtualShadowMapCmdBuild>();
+	SetComputePipelineStateFromCS(RHICmdList, VSMTileCmdBuildCS.GetComputeShader());
+
+	XVirtualShadowMapCmdBuild::SParameters Parameters;
+	Parameters.CBDynamicObjectParameters = RenderGeos[0]->GetPerObjectVertexCBuffer().get();
+	Parameters.CBCullingParameters = VirtualShadowMapResource.VSMCullingParameters.get();
+	Parameters.VirtualShadowMapTileAction = VirtualShadowMapResource.VirtualShadowMapTileAction.GetSRV();
+	Parameters.SceneConstantBufferIn = GlobalObjectStructBufferSRV.get();
+	Parameters.InputCommands = VirtualShadowMapResource.VirtualShadowMapCommnadBufferUnculled.GetSRV();
+	Parameters.OutputCommands = VirtualShadowMapResource.VirtualShadowMapCommnadBufferCulled.GetUAV();
+	Parameters.CommandCounterBuffer = VirtualShadowMapResource.VirtualShadowMapCommnadCounter.GetUAV();
+	VSMTileCmdBuildCS->SetParameters(RHICmdList, Parameters);
+	RHICmdList.RHIDispatchComputeShader(21, 50, 1);
+	RHICmdList.RHIEventEnd();
+}
+
+void XDeferredShadingRenderer::VirtualShadowMapProjection(XRHICommandList& RHICmdList)
+{
+
 }
 
 void XDeferredShadingRenderer::VirtualShadowMapVisualize(XRHICommandList& RHICmdList)

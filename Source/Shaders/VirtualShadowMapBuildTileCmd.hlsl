@@ -1,28 +1,18 @@
 #include "VirtualShadowMapCommon.hlsl"
-//todo: clear the command counter buffer
-
-struct SceneConstantBuffer
-{
-    row_major float4x4 gWorld;
-    float3 BoundingBoxCenter;//BoundingBox in World  Space
-    uint isDynamicObejct;
-    float3 BoundingBoxExtent;
-    float b;
-};
 
 // this constant buffer is used for cache miss test
 cbuffer CBDynamicObjectParameters
 {
     row_major float4x4 DynamicgWorld;
-    float3 DynamicBoundingBoxCenter; //world space
+    float3 DynamicBoundingBoxMax; //world space
     uint DynamicIsDynamicObejct;
-    float3 DynamicBoundingBoxExtent;
+    float3 DynamicBoundingBoxMin;
     float Dynamicpadding1;
 };
 
 cbuffer CBCullingParameters
 {
-    row_major float4x4 ShadowViewProject[3];
+    row_major float4x4 ShadowViewProject;
     uint MeshCount; 
 };
 
@@ -53,6 +43,15 @@ struct ShadowIndirectCommand
     uint Padding;
 };
 
+struct SceneConstantBuffer
+{
+    row_major float4x4 gWorld;
+    float3 BoundingBoxCenter;//BoundingBox in World  Space
+    uint isDynamicObejct;
+    float3 BoundingBoxExtent;
+    float b;
+};
+
 StructuredBuffer<uint> VirtualShadowMapTileAction;
 StructuredBuffer<SceneConstantBuffer> SceneConstantBufferIn;
 StructuredBuffer<ShadowIndirectCommand> InputCommands;
@@ -74,7 +73,7 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
     const uint2 MipTileIndexXY = uint2(MipTileIndex % MipLevelSize[MipLevel], MipTileIndex / MipLevelSize[MipLevel]);
 
     uint VirtualShadowMapAction = VirtualShadowMapTileAction[GlobalTileIndex];
-    if(VirtualShadowMapAction == TILE_ACTION_NEED_UPDATE)
+    if(VirtualShadowMapAction & TILE_ACTION_NEED_UPDATE)
     {
         uint StartBatchIndex = GroupID.y * 10;
         uint EndBatchIndex = StartBatchIndex + 10;
@@ -87,8 +86,8 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
             float3 BoundingBoxExtent = SceneConstantBuffer.BoundingBoxExtent;
             if(isDynamicObejct)
             {
-                BoundingBoxCenter = DynamicBoundingBoxCenter;
-                BoundingBoxExtent = DynamicBoundingBoxExtent;
+                BoundingBoxCenter = (DynamicBoundingBoxMax + DynamicBoundingBoxMin) * 0.5;
+                BoundingBoxExtent = DynamicBoundingBoxMax - BoundingBoxCenter;
             }
 
             float4 Corner[8];
@@ -105,7 +104,7 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
             [unroll]
             for(uint j = 0; j < 8 ; j++)
             {
-                float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), ShadowViewProject[MipLevel]);
+                float4 ScreenPosition = mul(float4(Corner[j].xyz,1.0f), ShadowViewProject);
                 ScreenPosition.xyz /= ScreenPosition.w;
 
                 float2 ScreenUV = ScreenPosition.xy;
@@ -123,7 +122,7 @@ void VSMTileCmdBuildCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Grou
             uint2 TileIndexMin = uint2( UVMin * MipLevelSize[MipLevel]);
             uint2 TileIndexMax = uint2( UVMax * MipLevelSize[MipLevel]);
 
-            if(TileIndexMin.x < MipTileIndexXY.x && MipTileIndexXY.y < MipTileIndexXY.y && TileIndexMax.x > MipTileIndexXY.x && TileIndexMax.y > MipTileIndexXY.y)
+            if(TileIndexMin.x <= MipTileIndexXY.x && TileIndexMin.y <= MipTileIndexXY.y && TileIndexMax.x >= MipTileIndexXY.x && TileIndexMax.y >= MipTileIndexXY.y)
             {
                 ShadowIndirectCommand InputCommand = InputCommands[Index];
                 InputCommand.StartInstanceLocation = GlobalTileIndex;

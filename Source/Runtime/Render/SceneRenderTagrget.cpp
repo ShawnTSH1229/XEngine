@@ -23,7 +23,7 @@ void XDeferredShadingRenderer::SceneTagetGen()
 		, ETextureCreateFlags(TexCreate_RenderTargetable), 1
 		, nullptr);
 
-	SceneTargets.PhysicalShadowDepthTexture = RHICreateTexture2D(PhysicalShadowDepthTextureSize, PhysicalShadowDepthTextureSize, 1, false, false,
+	SceneTargets.PhysicalShadowDepthTexture = RHICreateTexture2D(VSM_TEX_PHYSICAL_SIZE, VSM_TEX_PHYSICAL_SIZE, 1, false, false,
 		EPixelFormat::FT_R32_UINT, ETextureCreateFlags(TexCreate_UAV | TexCreate_ShaderResource), 1, nullptr);
 
 	SceneTargets.PagetableInfos = RHICreateTexture2D(VirtualTileWidthNum, VirtualTileWidthNum, 1, false, false, EPixelFormat::FT_R32G32B32A32_UINT

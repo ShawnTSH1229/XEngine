@@ -95,7 +95,7 @@ private:
 struct VertexCBufferStruct
 {
 	XMatrix WorldMatrix;
-	XVector3 BoundBoxMax; float padding0;
+	XVector3 BoundBoxMax; uint32 bDynamicObject;;
 	XVector3 BoundBoxMin; float padding1;
 };
 

@@ -67,38 +67,29 @@ void XDeferredShadingRenderer::ViewInfoUpdate(GCamera& CameraIn)
 	RViewInfo.ViewConstantBuffer.get()->UpdateData(&RViewInfo.ViewCBCPUData, sizeof(ViewConstantBufferData), 0);
 }
 
-struct GlobalPerObjectConstants
-{
-	XMatrix World;
-	XVector3 BoundingBoxCenter;
-	uint32 isDynamicObejct = 0;
-	XVector3 BoundingBoxExtent;
-	float padding1 = 1.0f;
-};
+
 
 void XDeferredShadingRenderer::GlobalPerObjectBufferSetup()
 {
 	uint32 ObjConstVecSize = sizeof(GlobalPerObjectConstants) * RenderGeos.size();
-	GlobalObjectDataCPU.resize(RenderGeos.size());
+	GlobalPerObjectConstants* GloablObjectDataCPU = (GlobalPerObjectConstants*)std::malloc(ObjConstVecSize);
 	for (int i = 0; i < RenderGeos.size(); i++)
 	{
 		auto& RG = RenderGeos[i];
 
 		XBoundingBox BoudingBoxTans = RG->GetBoudingBoxWithTrans();
-		GlobalObjectDataCPU[i].BoundingBoxCenter = BoudingBoxTans.Center ;
-		GlobalObjectDataCPU[i].BoundingBoxExtent = BoudingBoxTans.Extent;
-		GlobalObjectDataCPU[i].World = RG->GetWorldTransform().GetCombineMatrix();
-		GlobalObjectDataCPU[i].isDynamicObejct = RG->GetObjectMovable() ? 1 : 0;
+		GloablObjectDataCPU[i].BoundingBoxCenter = BoudingBoxTans.Center ;
+		GloablObjectDataCPU[i].BoundingBoxExtent = BoudingBoxTans.Extent;
+		GloablObjectDataCPU[i].World = RG->GetWorldTransform().GetCombineMatrix();
+		GloablObjectDataCPU[i].isDynamicObejct = RG->GetObjectMovable() ? 1 : 0;
 	}
 
 	FResourceVectorUint8 ObjectStructBufferData;
-	ObjectStructBufferData.Data = GlobalObjectDataCPU.data();
+	ObjectStructBufferData.Data = GloablObjectDataCPU;
 	ObjectStructBufferData.SetResourceDataSize(ObjConstVecSize);
 	XRHIResourceCreateData ObjectStructBufferResourceData(&ObjectStructBufferData);
 
-	GlobalObjectStructBuffer = RHIcreateStructBuffer(sizeof(VertexCBufferStruct), ObjConstVecSize,
-		EBufferUsage((int)EBufferUsage::BUF_ShaderResource), ObjectStructBufferResourceData);
-
+	GlobalObjectStructBuffer = RHIcreateStructBuffer(sizeof(VertexCBufferStruct), ObjConstVecSize, EBufferUsage(int(EBufferUsage::BUF_StructuredBuffer) | int(EBufferUsage::BUF_UnorderedAccess)), ObjectStructBufferResourceData);
 	GlobalObjectStructBufferSRV = RHICreateShaderResourceView(GlobalObjectStructBuffer.get());
 }
 
@@ -123,6 +114,7 @@ void XDeferredShadingRenderer::Setup(
 	PreDepthPassGPUCullingSetup();
 	VSMSetup_Deprecated();
 
+	VirutalShadowMapSetup();
 	
 
 	EditorUI.SetDefaltStyle();
