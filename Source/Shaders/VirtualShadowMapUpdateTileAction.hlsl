@@ -51,7 +51,7 @@ void VSMUpdateTileActionCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_
         TileAction = TILE_ACTION_CACHED;
     }
 
-    if(bCacheMissTile)
+    if(bCacheMissTile && bTileUsed)
     {
         VirtualShadowMapTileTable[GlobalTileIndex] = VirtualShadowMapPreTileTable[GlobalTileIndex];
         TileAction = TILE_ACTION_NEED_UPDATE;       

@@ -201,7 +201,7 @@ void VSMVisualizeCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupTh
             uint TileIndexY = (TileIndex >> 16) & 0xFFFF;
             uint2 DestIndex = uint2((Offset + TileIndexX) * 16 + GroupThreadID.x, TileIndexY * 16 + GroupThreadID.y);
 
-            if(PhysicalTileIndex > VirtualShadowMapFreeListStart[0])
+            if(PhysicalTileIndex >= VirtualShadowMapFreeListStart[0])
             {
                 if((TileIndexX % 2) == (TileIndexY % 2))
                 {

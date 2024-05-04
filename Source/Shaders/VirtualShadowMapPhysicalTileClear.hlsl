@@ -2,7 +2,7 @@
 StructuredBuffer<uint> VirtualShadowMapTileTable;
 StructuredBuffer<uint> VirtualShadowMapTileAction;
 RWStructuredBuffer<uint> VirtualShadowMapTileTablePacked_UAV;
-RWStructuredBuffer<uint> TileNeedUpdateCounter_UAV; //todo: clear
+RWStructuredBuffer<uint> TileNeedUpdateCounter_UAV;
 
 [numthreads(VSM_TILE_MAX_MIP_NUM_XY, VSM_TILE_MAX_MIP_NUM_XY , 1)]
 void VSMTileTableUpdatedPackCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID, uint2 DispatchThreadID: SV_DispatchThreadID)
@@ -30,8 +30,9 @@ StructuredBuffer<uint> VirtualShadowMapTileTablePacked_SRV;
 StructuredBuffer<uint> TileNeedUpdateCounter_SRV;
 RWTexture2D<uint> PhysicalShadowDepthTexture;
 // Dispatch Size X: 24 Y: 16 
+// Group Size 32 * 32
 [numthreads(VSM_TILE_TEX_PHYSICAL_SIZE / 8, VSM_TILE_TEX_PHYSICAL_SIZE / 8 , 1)]
-void VSMTileTableClearCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID, uint2 DispatchThreadID: SV_DispatchThreadID)
+void VSMPhysicalTileClearCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_GroupThreadID, uint2 DispatchThreadID: SV_DispatchThreadID)
 {
     uint TiltTableIndex = GroupID.x;
     if(TiltTableIndex < TileNeedUpdateCounter_SRV[0])
@@ -40,7 +41,7 @@ void VSMTileTableClearCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Gr
         uint PhysicalTileIndexX = (PhysicalTileIndex >>  0) & 0xFFFF;
         uint PhysicalTileIndexY = (PhysicalTileIndex >> 16) & 0xFFFF;
 
-        uint2 StartPos = uint2(PhysicalTileIndexX * VSM_TILE_TEX_PHYSICAL_SIZE, PhysicalTileIndexY * PhysicalTileIndexY);
+        uint2 StartPos = uint2(PhysicalTileIndexX * VSM_TILE_TEX_PHYSICAL_SIZE, PhysicalTileIndexY * VSM_TILE_TEX_PHYSICAL_SIZE);
 
         uint RawTexelToClearPerThread = 4;
         const uint BrickNumX = 4;
@@ -50,8 +51,8 @@ void VSMTileTableClearCS(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Gr
         const uint BrickSizeX = VSM_TILE_TEX_PHYSICAL_SIZE / 4; // 64
         const uint BrickSizeY = VSM_TILE_TEX_PHYSICAL_SIZE / 4; // 64
 
-        uint StartClearX = BrickIndex.x * BrickSizeX + GroupThreadID.x + StartPos.x;
-        uint StartClearY = BrickIndex.y * BrickSizeY + GroupThreadID.y + StartPos.y;
+        uint StartClearX = BrickIndex.x * BrickSizeX + GroupThreadID.x * 2 + StartPos.x;
+        uint StartClearY = BrickIndex.y * BrickSizeY + GroupThreadID.y * 2 + StartPos.y;
 
         // Brick Texture Szie: 64 * 64
         // Group Size: 32 * 32

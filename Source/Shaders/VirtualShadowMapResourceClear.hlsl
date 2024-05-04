@@ -8,6 +8,7 @@ RWStructuredBuffer<uint> VirtualShadowMapTileStateCacheMiss;
 RWStructuredBuffer<uint> VirtualShadowMapTileTable;
 RWStructuredBuffer<uint> VirtualShadowMapTileAction;
 RWStructuredBuffer<uint> CommandCounterBuffer;
+RWStructuredBuffer<uint> TileNeedUpdateCounter_UAV;
 
 //Dispatch size 64 + 16 + 2 = 82
 
@@ -17,6 +18,7 @@ void VSMResourceClear(uint3 GroupID : SV_GroupID, uint3 GroupThreadID : SV_Group
     if(DispatchThreadID.x == 0 && DispatchThreadID.y == 0)
     {
         CommandCounterBuffer[0] = 0;
+        TileNeedUpdateCounter_UAV[0] = 0;
     }
 
     uint GlobalTileIndex = GroupID.x * 16 * 16 + GroupThreadID.y * 16 + GroupThreadID.x;
