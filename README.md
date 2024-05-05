@@ -27,11 +27,11 @@ cmake -G "Visual Studio 17 2022" ../
 
 High resolution virtual shadow map with shadow tile cache and clip maps
 
-<p align="center">
+<p align="left">
     <img src="/Resource/renderdoc.png" width="60%" height="60%">
 </p>
 
-<p align="center">
+<p align="left">
     <img src="/Resource/physical_tile_visualize.png" width="50%" height="50%">
 </p>
 
