@@ -38,7 +38,7 @@ High resolution virtual shadow map with shadow tile cache and clip maps
 2.[Sky atmosphere](https://shawntsh1229.github.io/2024/05/05/Sky-Atmosphere-In-XEngine/):
 
 <p align="left">
-    <img src="/Resource/skyatmosphere.png" width="50%" height="50%">
+    <img src="/Resource/skyatmosphere.png" width="80%" height="80%">
 </p>
 
 
