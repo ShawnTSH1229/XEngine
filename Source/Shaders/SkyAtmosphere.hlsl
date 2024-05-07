@@ -1,248 +1,7 @@
-#include "Common.hlsl"
-#include "FastMath.hlsl"
-#include "Math.hlsl"
-
-#define CM_TO_SKY_UNIT 0.00001f
-
-cbuffer SkyAtmosphere
-{
-    float4 SkyAtmosphere_TransmittanceLutSizeAndInvSize;
-    float4 SkyAtmosphere_MultiScatteredLuminanceLutSizeAndInvSize;
-    float4 SkyAtmosphere_SkyViewLutSizeAndInvSize;
-    float4 SkyAtmosphere_CameraAerialPerspectiveVolumeSizeAndInvSize;
-
-	float4 Atmosphere_RayleighScattering;
-    
-    float4 Atmosphere_MieScattering;
-    float4 Atmosphere_MieAbsorption;
-    float4 Atmosphere_MieExtinction;
-    float4 Atmosphere_GroundAlbedo;
-
-    float Atmosphere_TopRadiusKm;
-    float Atmosphere_BottomRadiusKm;
-    float Atmosphere_MieDensityExpScale;
-    float Atmosphere_RayleighDensityExpScale;
-
-	float Atmosphere_TransmittanceSampleCount;
-	float SkyAtmosphere_MultiScatteringSampleCount;
-    float Atmosphere_MiePhaseG;
-    float Atmosphere_padding0;
-
-    float4 Atmosphere_Light0Illuminance;
-
-    float Atmosphere_CameraAerialPerspectiveVolumeDepthResolution;
-    float Atmosphere_CameraAerialPerspectiveVolumeDepthResolutionInv;
-    float Atmosphere_CameraAerialPerspectiveVolumeDepthSliceLengthKm;
-    float Atmosphere_padding1;
-
-}
-
-
-
-/**
- * Returns near intersection in x, far intersection in y, or both -1 if no intersection.
- * RayDirection does not need to be unit length.
- */
-float2 RayIntersectSphere(float3 RayOrigin, float3 RayDirection, float4 Sphere)
-{
-    float3 LocalPosition = RayOrigin - Sphere.xyz;
-    float LocalPositionSqr = dot(LocalPosition, LocalPosition);
-
-    float3 QuadraticCoef;
-    QuadraticCoef.x = dot(RayDirection, RayDirection);
-    QuadraticCoef.y = 2 * dot(RayDirection, LocalPosition);
-    QuadraticCoef.z = LocalPositionSqr - Sphere.w * Sphere.w;
-
-    float Discriminant = QuadraticCoef.y * QuadraticCoef.y - 4 * QuadraticCoef.x * QuadraticCoef.z;
-
-    float2 Intersections = -1;
-
-	// Only continue if the ray intersects the sphere
-    [flatten]
-    if (Discriminant >= 0)
-    {
-        float SqrtDiscriminant = sqrt(Discriminant);
-        Intersections = (-QuadraticCoef.y + float2(-1, 1) * SqrtDiscriminant) / (2 * QuadraticCoef.x);
-    }
-
-    return Intersections;
-}
-
-// - RayOrigin: ray origin
-// - RayDir: normalized ray direction
-// - SphereCenter: sphere center
-// - SphereRadius: sphere radius
-// - Returns distance from RayOrigin to closest intersecion with sphere,
-//   or -1.0 if no intersection.
-float RaySphereIntersectNearest(float3 RayOrigin, float3 RayDir, float3 SphereCenter, float SphereRadius)
-{
-	float2 Sol = RayIntersectSphere(RayOrigin, RayDir, float4(SphereCenter, SphereRadius));
-	float Sol0 = Sol.x;
-	float Sol1 = Sol.y;
-	if (Sol0 < 0.0f && Sol1 < 0.0f)
-	{
-		return -1.0f;
-	}
-	if (Sol0 < 0.0f)
-	{
-		return max(0.0f, Sol1);
-	}
-	else if (Sol1 < 0.0f)
-	{
-		return max(0.0f, Sol0);
-	}
-	return max(0.0f, min(Sol0, Sol1));
-}
-
-
-struct MediumSampleRGB
-{
-    float3 Scattering;
-    float3 Absorption;
-    float3 Extinction;
-
-    float3 ScatteringMie;
-    float3 AbsorptionMie;
-    float3 ExtinctionMie;
-
-    float3 ScatteringRay;
-    float3 AbsorptionRay;
-    float3 ExtinctionRay;
-
-    float3 Albedo;
-};
-
-float3 GetAlbedo(float3 Scattering, float3 Extinction)
-{
-    return Scattering / max(0.001f, Extinction);
-}
-
-MediumSampleRGB SampleMediumRGB(in float3 WorldPos)
-{
-    const float SampleHeight = max(0.0, (length(WorldPos) - Atmosphere_BottomRadiusKm));
-    const float DensityMie = exp(Atmosphere_MieDensityExpScale * SampleHeight);
-    const float DensityRay = exp(Atmosphere_RayleighDensityExpScale * SampleHeight);
-
-    MediumSampleRGB s;
-
-    s.ScatteringMie = DensityMie * Atmosphere_MieScattering.rgb;
-    s.AbsorptionMie = DensityMie * Atmosphere_MieAbsorption.rgb;
-    s.ExtinctionMie = DensityMie * Atmosphere_MieExtinction.rgb; // equals to  ScatteringMie + AbsorptionMie
-
-    s.ScatteringRay = DensityRay * Atmosphere_RayleighScattering.rgb;
-    s.AbsorptionRay = 0.0f;
-    s.ExtinctionRay = s.ScatteringRay + s.AbsorptionRay;
-
-    s.Scattering = s.ScatteringMie + s.ScatteringRay;
-    s.Absorption = s.AbsorptionMie + s.AbsorptionRay;
-    s.Extinction = s.ExtinctionMie + s.ExtinctionRay;
-    s.Albedo = GetAlbedo(s.Scattering, s.Extinction);
-
-    return s;
-}
-
-////////////////////////////////////////////////////////////
-// LUT functions
-////////////////////////////////////////////////////////////
-
-// Transmittance LUT function parameterisation from Bruneton 2017 https://github.com/ebruneton/precomputed_atmospheric_scattering
-// uv in [0,1]
-// ViewZenithCosAngle in [-1,1]
-// ViewHeight in [bottomRAdius, topRadius]
-
-
-//NOTE : See https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html
-//explaned in Part Transmittance -> Part Precomputation
-void UvToLutTransmittanceParams(out float ViewHeight, out float ViewZenithCosAngle, in float2 UV)
-{
-	//UV = FromSubUvsToUnit(UV, SkyAtmosphere.TransmittanceLutSizeAndInvSize); // No real impact so off
-	float Xmu = UV.x;
-	float Xr = UV.y;
-
-	float H = sqrt(Atmosphere_TopRadiusKm * Atmosphere_TopRadiusKm - Atmosphere_BottomRadiusKm * Atmosphere_BottomRadiusKm);
-	float Rho = H * Xr;
-	ViewHeight = sqrt(Rho * Rho + Atmosphere_BottomRadiusKm * Atmosphere_BottomRadiusKm);
-
-	float Dmin = Atmosphere_TopRadiusKm - ViewHeight;
-	float Dmax = Rho + H;
-	float D = Dmin + Xmu * (Dmax - Dmin);
-	ViewZenithCosAngle = D == 0.0f ? 1.0f : (H * H - Rho * Rho - D * D) / (2.0f * ViewHeight * D);
-	ViewZenithCosAngle = clamp(ViewZenithCosAngle, -1.0f, 1.0f);
-}
-
-#define DEFAULT_SAMPLE_OFFSET 0.3f
-
-//WorldDir : should be normalized
-//to solve tau(s)= -int_0^s (extinction(p))dt
-float3 ComputeOpticalDepth(in float3 WorldPos,in float3 WorldDir , in float SampleCount)
-{
-    float t = 0.0f, tMax = 0.0f;
-	float3 PlanetO = float3(0.0f, 0.0f, 0.0f);
-	float tBottom = RaySphereIntersectNearest(WorldPos, WorldDir, PlanetO, Atmosphere_BottomRadiusKm);
-	float tTop = RaySphereIntersectNearest(WorldPos, WorldDir, PlanetO, Atmosphere_TopRadiusKm);
-	
-	if (tBottom < 0.0f)
-	{
-		if (tTop < 0.0f)	{	tMax = 0.0f; return 0;	} // No intersection with planet nor its atmosphere: stop right away  
-		else				{	tMax = tTop;			}
-	}
-	else
-	{
-		if (tTop > 0.0f)	{ tMax = min(tTop, tBottom); }
-	}
-
-	float dt = tMax / SampleCount;
-    float3 OpticalDepth = 0.0f;
-	for (float SampleI = 0.0f; SampleI < SampleCount; SampleI += 1.0f)
-	{
-		
-		t = tMax * (SampleI + DEFAULT_SAMPLE_OFFSET) / SampleCount;
-		float3 P = WorldPos + t * WorldDir;
-		MediumSampleRGB Medium = SampleMediumRGB(P);
-        const float3 SampleOpticalDepth = Medium.Extinction * dt;
-		OpticalDepth += SampleOpticalDepth;		
-	}
-	return OpticalDepth;
-}
-
-
-////////////////////////////////////////////////////////////
-// Transmittance LUT
-////////////////////////////////////////////////////////////
-
+#include "SkyAtmosphereCommon.hlsl"
 #ifndef THREADGROUP_SIZE
-#define THREADGROUP_SIZE 1
+#define THREADGROUP_SIZE 8
 #endif
-
-RWTexture2D<float3> TransmittanceLutUAV;
-
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, 1)]
-void RenderTransmittanceLutCS(uint3 ThreadId : SV_DispatchThreadID)
-{
-    float2 PixPos = float2(ThreadId.xy) + 0.5f;
-
-    // Compute camera position from LUT coords
-	float2 UV = (PixPos) * SkyAtmosphere_TransmittanceLutSizeAndInvSize.zw;
-    float ViewHeight;
-	float ViewZenithCosAngle;
-	UvToLutTransmittanceParams(ViewHeight, ViewZenithCosAngle, UV);
-
-    //  A few extra needed constants
-	//float3 WorldPos = float3(0.0f, 0.0f, ViewHeight);
-    float3 WorldPos = float3(0.0f, ViewHeight, 0);
-	//float3 WorldDir = float3(0.0f, sqrt(1.0f - ViewZenithCosAngle * ViewZenithCosAngle), ViewZenithCosAngle);
-    float3 WorldDir = float3(0.0f, ViewZenithCosAngle,sqrt(1.0f - ViewZenithCosAngle * ViewZenithCosAngle));
-
-	//tau(s)= -int_0^s (extinction(p))dt
-	float3 OpticalDepth = ComputeOpticalDepth(WorldPos,WorldDir,Atmosphere_TransmittanceSampleCount);
-	
-	//Tr = exp(- tau(s))
-	float3 transmittance = exp(-OpticalDepth);
-
-    TransmittanceLutUAV[ThreadId.xy]=transmittance;
-}
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -269,11 +28,9 @@ void LutTransmittanceParamsToUv(in float ViewHeight, in float ViewZenithCosAngle
     getTransmittanceLutUvs(ViewHeight, ViewZenithCosAngle, Atmosphere_BottomRadiusKm, Atmosphere_TopRadiusKm, UV);
 }
 
-//#define PI 3.14159265358979
-#define PLANET_RADIUS_OFFSET 0.001f
+#define PLANET_RADIUS_OFFSET 0.00001f //1m
 RWTexture2D<float3> MultiScatteredLuminanceLutUAV;
 Texture2D<float3> TransmittanceLutTexture;
-//SamplerState gsamLinearClamp : register(s5, space1000);
 
 void ComputeScattedLightLuminanceAndMultiScatAs1in(
     in float3 WorldPos, 
@@ -316,40 +73,22 @@ void ComputeScattedLightLuminanceAndMultiScatAs1in(
         const float3 SampleOpticalDepth = Medium.Extinction * dt * 1.0f;
         const float3 SampleTransmittance = exp(-SampleOpticalDepth);
 
-        // 1 is the integration of luminance over the 4pi of a sphere, and assuming an isotropic phase function of 1.0/(4*PI) 
-		MultiScatAs1 += Throughput * Medium.Scattering * 1.0f * dt;
+        float3 MS = Medium.Scattering * 1;
+		float3 MSint = (MS - MS * SampleTransmittance) / Medium.Extinction;
+		MultiScatAs1 += Throughput * MSint;
 
-        //Compute TransmittanceToLight0 by look up TransmittanceLutTexture ,which is computed in last step
         float2 UV;
         const float3 UpVector = P / PHeight;
         float Light0ZenithCosAngle = dot(Light0Dir, UpVector);
         LutTransmittanceParamsToUv(PHeight, Light0ZenithCosAngle, UV);
         float3 TransmittanceToLight0 = TransmittanceLutTexture.SampleLevel(gsamLinearClamp, UV, 0).rgb;
-		
-        //Compute PlanetShadow0
-        //if Light0 is intersected with plant0 , then PlanetShadow0 is euqals to 0
         float tPlanet0 = RaySphereIntersectNearest(P, Light0Dir, PlanetO + PLANET_RADIUS_OFFSET * UpVector, Atmosphere_BottomRadiusKm);
-        float PlanetShadow0 = tPlanet0 >= 0.0f ? 0.0f : 1.0f;
-
-        //Compute Phase 
-        //phase funtion become isotropic when scattering time increaseing , so we times uniformPhase
+        //float PlanetShadow0 = tPlanet0 >= 0.0f ? 0.0f : 1.0f;
+        float PlanetShadow0 = 1.0f;
         float3 PhaseTimesScattering0 = Medium.Scattering * uniformPhase;
-
-        //S euals to in point p , how many light scatters to eye dir(PhaseTimesScattering0)
-        //and then times(x) transmittance form p to light pos
-        //if light dir is intersected with plant , then planet shaow equals to 0
-        
-        //NOTE : we ingnore MultiScatteredLuminance
         float3 S = Light0Illuminance * PlanetShadow0 * TransmittanceToLight0 * PhaseTimesScattering0;
-
-        // See slide 28 at http://www.frostbite.com/2015/08/physically-based-unified-volumetric-rendering-in-frostbite/ 
-        // L = /int_ Tr(x_eye, x_sample) * S dx
-        // S is single scattered light , which is computed in last step
-        // but Tr(x_eye, x_sample) is unkown
-        // /int_0^tmax (e ^(- extinction * pos) x S) dx = (S - S* e ^(- extinction * pos))/ extinction
         float3 Sint = (S - S * SampleTransmittance) / Medium.Extinction; // integrate along the current step segment 
-        
-        // accumulate and also take into account the transmittance from previous steps
+
         L += Throughput * Sint; 
         Throughput *= SampleTransmittance;
     }
@@ -381,16 +120,13 @@ void RenderMultiScatteredLuminanceLutCS(uint3 ThreadId : SV_DispatchThreadID)
 {
 	float2 PixPos = float2(ThreadId.xy) + 0.5f;
 	float CosLightZenithAngle = (PixPos.x * SkyAtmosphere_MultiScatteredLuminanceLutSizeAndInvSize.z) * 2.0f - 1.0f;
-    //float3 LightDir = float3(0.0f, sqrt(saturate(1.0f - CosLightZenithAngle * CosLightZenithAngle)), CosLightZenithAngle);
     float3 LightDir = float3(0.0f, CosLightZenithAngle, sqrt(saturate(1.0f - CosLightZenithAngle * CosLightZenithAngle)));
     
     float ViewHeight = Atmosphere_BottomRadiusKm +
 	(PixPos.y * SkyAtmosphere_MultiScatteredLuminanceLutSizeAndInvSize.w) *
 	(Atmosphere_TopRadiusKm - Atmosphere_BottomRadiusKm);
 
-    //float3 WorldPos = float3(0.0f, 0.0f, ViewHeight);
     float3 WorldPos = float3(0.0f, ViewHeight, 0);
-    //float3 WorldDir = float3(0.0f, 0.0f, 1.0f);
     float3 WorldDir = float3(0.0f, 1.0f, 0.0f);
 
 	const float3 OneIlluminance = float3(1.0f, 1.0f, 1.0f);
@@ -607,19 +343,6 @@ void RenderSkyViewLutCS(uint3 ThreadId : SV_DispatchThreadID)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 float3 GetScreenWorldDir(in float4 SvPosition)
 {
     float3 NDCPos = float3((SvPosition.xy * View_ViewSizeAndInvSize.zw - 0.5f) * float2(2, -2), SvPosition.z);
@@ -627,59 +350,6 @@ float3 GetScreenWorldDir(in float4 SvPosition)
     const float Depth = 10000.0f;
     float4 WorldPos = mul_x(float4(ScreenPosition * Depth, Depth, 1),cbView_ScreenToWorld);
     return normalize(WorldPos.xyz - View_WorldCameraOrigin);
-}
-
-RWTexture3D<float4> CameraAerialPerspectiveVolumeUAV;
-
-//Compute Form StartDepth To Voxel In ThreadId.xyz
-//And RenderSkyViewLutCS Is From Camera Pos To TopRadius
-[numthreads(THREADGROUP_SIZE, THREADGROUP_SIZE, THREADGROUP_SIZE)]
-void RenderCameraAerialPerspectiveVolumeCS(uint3 ThreadId : SV_DispatchThreadID)
-{
-    float2 PixPos = float2(ThreadId.xy) + 0.5f;
-    float2 UV = PixPos * SkyAtmosphere_CameraAerialPerspectiveVolumeSizeAndInvSize.zw;
-   
-    float4 SVPos = float4(UV * View_ViewSizeAndInvSize.xy, 0.0f, 1.0f);
-    float3 WorldDir = GetScreenWorldDir(SVPos);
-    float3 CamPos = GetCameraPlanetPos();
-
-   // CameraAerialPerspectiveVolumeDepthResolution = 16
-    float Slice = ((float(ThreadId.z) + 0.5f) * Atmosphere_CameraAerialPerspectiveVolumeDepthResolutionInv); // +0.5 to always have a distance to integrate over
-    Slice *= Slice; // squared distribution
-    Slice *= Atmosphere_CameraAerialPerspectiveVolumeDepthResolution;
-   
-    float AerialPerspectiveStartDepthKm = 0.1;
-    float3 RayStartWorldPos = CamPos + AerialPerspectiveStartDepthKm * WorldDir; // Offset according to start depth
-   
-   //CameraAerialPerspectiveVolumeDepthSliceLengthKm = 96Km / 16 = 6Km
-    float tMax = Slice * Atmosphere_CameraAerialPerspectiveVolumeDepthSliceLengthKm;
-    float3 VoxelWorldPos = RayStartWorldPos + tMax * WorldDir;
-    float VoxelHeight = length(VoxelWorldPos);
-   
-    const float UnderGround = VoxelHeight < Atmosphere_BottomRadiusKm;
-   
-    float3 CameraToVoxel = VoxelWorldPos - CamPos;
-    float CameraToVoxelLen = length(CameraToVoxel);
-    float3 CameraToVoxelDir = CameraToVoxel / CameraToVoxelLen;
-    float PlanetNearT = RaySphereIntersectNearest(CamPos, CameraToVoxelDir, float3(0, 0, 0), Atmosphere_BottomRadiusKm);
-    bool BelowHorizon = PlanetNearT > 0.0f && CameraToVoxelLen > PlanetNearT;
-   
-    if (BelowHorizon || UnderGround)
-    {
-        CamPos += normalize(CamPos) * 0.02f;
-        VoxelWorldPos = CamPos + PlanetNearT * CameraToVoxelDir;
-        tMax = length(VoxelWorldPos - RayStartWorldPos);
-    }
-   
-    float SampleCount = max(1.0f, (float(ThreadId.z) + 1.0f));
-    float3 AtmosphereLightDirection0 = View_AtmosphereLightDirection.xyz;
-    float3 Light0Illuminance = Atmosphere_Light0Illuminance.xyz;
-
-    float3 OutL = ComputeLForRenderSkyViewLut(
-	    RayStartWorldPos, WorldDir, SampleCount,
-       AtmosphereLightDirection0, Light0Illuminance, tMax);
-
-    CameraAerialPerspectiveVolumeUAV[ThreadId.xyz] = float4(OutL, 1.0f);
 }
 
 float4 PrepareOutput(float3 PreExposedLuminance, float3 Transmittance = float3(1.0f, 1.0f, 1.0f))
@@ -726,24 +396,10 @@ void SkyViewLutParamsToUv(
     UV = FromUnitToSubUvs(UV, SkyViewLutSizeAndInvSize);
 }
 
-//struct VertexIn
-//{
-//    float2 PosIn : POSITION;
-//    float2 TexC : TEXCOORD;
-//};
-//
-//float4 VS(VertexIn vin) : SV_POSITION
-//{
-//    float4 PosH = float4(vin.PosIn, 0.0f, 1.0f);
-//    return PosH;
-//}
-
-
 
 Texture2D SkyViewLutTexture;
 Texture2D SceneTexturesStruct_SceneDepthTexture;
 Texture2D TransmittanceLutTexture_Combine;
-//Texture3D AerialPerspectiveVolumeTexture_Combine;
 
 float3 GetLightDiskLuminance(float3 WorldPos, float3 WorldDir)
 {
@@ -814,31 +470,4 @@ void RenderSkyAtmosphereRayMarchingPS(
         OutLuminance = PrepareOutput(PreExposedL);
         return;
     }
-
-    //{
-    //    //float tDepth = max(0.0f, WorldZ - AerialPerspectiveVolumeStartDepth);
-    //    float tDepth = max(0.0f, WorldZ - 100); //For test
-    //
-    //    float LinearSlice = tDepth / Atmosphere_CameraAerialPerspectiveVolumeDepthSliceLengthKm; //TODO Inv
-    //    float LinearW = LinearSlice * Atmosphere_CameraAerialPerspectiveVolumeDepthResolutionInv; // Depth slice coordinate in [0,1]
-    //    float NonLinW = sqrt(LinearW);
-    //    float NonLinSlice = NonLinW * Atmosphere_CameraAerialPerspectiveVolumeDepthResolution;
-    //
-    //    const float HalfSliceDepth = 0.70710678118654752440084436210485f; // sqrt(0.5f)
-    //    float Weight = 1.0f;
-    //    if (NonLinSlice < HalfSliceDepth)
-    //    {
-	//	// We multiply by weight to fade to 0 at depth 0. It works for luminance and opacity.
-    //        Weight = saturate(NonLinSlice * NonLinSlice * 2.0f); // Square to have a linear falloff from the change of distribution above
-    //    }
-    //    float4 AP = AerialPerspectiveVolumeTexture_Combine.Sample(gsamLinearClamp, float3(UvBuffer, NonLinW), 0.0f);
-	//    // Lerp to no contribution near the camera (careful as AP contains transmittance)
-    //    AP.rgb *= Weight;
-    //    AP.a = 1.0 - (Weight * (1.0f - AP.a));
-    //
-    //    PreExposedL += AP.rgb;
-    //    OutLuminance = PrepareOutput(PreExposedL, float3(AP.a, AP.a, AP.a));
-    //    return;
-    //}
-
 }

@@ -42,46 +42,6 @@ public:
 
 TGlobalResource<XSkyAtmosphereResourece>SkyAtmosphereResourece;
 
-//XRenderTransmittanceLutCS
-class XRenderTransmittanceLutCS :public XGloablShader
-{
-public:
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XRenderTransmittanceLutCS(Initializer);
-	}
-	static ShaderInfos StaticShaderInfos;
-
-	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings)
-	{
-		OutSettings.SetDefines("THREADGROUP_SIZE", "8");
-	}
-public:
-
-	XRenderTransmittanceLutCS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
-	{
-		TransmittanceLutUAV.Bind(Initializer.ShaderParameterMap, "TransmittanceLutUAV");
-		cbSkyAtmosphere.Bind(Initializer.ShaderParameterMap, "SkyAtmosphere");
-	}
-
-	void SetParameters(
-		XRHICommandList& RHICommandList,
-		XRHIUnorderedAcessView* InUAV,
-		XRHIConstantBuffer* IncbSkyAtmosphere)
-	{
-		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, TransmittanceLutUAV, InUAV);
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, cbSkyAtmosphere, IncbSkyAtmosphere);
-	}
-
-	CBVParameterType cbSkyAtmosphere;
-	UAVParameterType TransmittanceLutUAV;
-};
-
-XRenderTransmittanceLutCS::ShaderInfos XRenderTransmittanceLutCS::StaticShaderInfos(
-	"RenderTransmittanceLutCS", GET_SHADER_PATH("SkyAtmosphere.hlsl"),
-	"RenderTransmittanceLutCS", EShaderType::SV_Compute, XRenderTransmittanceLutCS::CustomConstrucFunc,
-	XRenderTransmittanceLutCS::ModifyShaderCompileSettings);
-
 class XRenderMultiScatteredLuminanceLutCS : public XGloablShader
 {
 public:
@@ -181,6 +141,57 @@ XRenderSkyViewLutCS::ShaderInfos XRenderSkyViewLutCS::StaticShaderInfos(
 	"RenderSkyViewLutCS", GET_SHADER_PATH("SkyAtmosphere.hlsl"),
 	"RenderSkyViewLutCS", EShaderType::SV_Compute, XRenderSkyViewLutCS::CustomConstrucFunc,
 	XRenderSkyViewLutCS::ModifyShaderCompileSettings);
+
+
+class XRenderSkyAtmosphereRayMarchingPS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
+	{
+		return new XRenderSkyAtmosphereRayMarchingPS(Initializer);
+	}
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+
+public:
+	XRenderSkyAtmosphereRayMarchingPS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
+	{
+		cbView.Bind(Initializer.ShaderParameterMap, "cbView");
+		SkyAtmosphere.Bind(Initializer.ShaderParameterMap, "SkyAtmosphere");
+
+		SkyViewLutTexture.Bind(Initializer.ShaderParameterMap, "SkyViewLutTexture");
+		SceneDepthTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_SceneDepthTexture");
+		TransmittanceLutTexture_Combine.Bind(Initializer.ShaderParameterMap, "TransmittanceLutTexture_Combine");
+	}
+
+	void SetParameter(
+		XRHICommandList& RHICommandList,
+		XRHIConstantBuffer* IncbView,
+		XRHIConstantBuffer* InSkyAtmosphere,
+		XRHITexture* InSkyViewLutTexture,
+		XRHITexture* InSceneDepthTexture,
+		XRHITexture* InTransmittanceLutTexture_Combine
+	)
+	{
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, cbView, IncbView);
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, SkyAtmosphere, InSkyAtmosphere);
+
+		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SkyViewLutTexture, InSkyViewLutTexture);
+		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SceneDepthTexture, InSceneDepthTexture);
+		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, TransmittanceLutTexture_Combine, InTransmittanceLutTexture_Combine);
+	}
+
+	CBVParameterType cbView;
+	CBVParameterType SkyAtmosphere;
+
+	TextureParameterType SkyViewLutTexture;
+	TextureParameterType SceneDepthTexture;
+	TextureParameterType TransmittanceLutTexture_Combine;
+};
+XRenderSkyAtmosphereRayMarchingPS::ShaderInfos XRenderSkyAtmosphereRayMarchingPS::StaticShaderInfos(
+	"XRenderSkyAtmosphereRayMarchingPS", GET_SHADER_PATH("SkyAtmosphere.hlsl"),
+	"RenderSkyAtmosphereRayMarchingPS", EShaderType::SV_Pixel, XRenderSkyAtmosphereRayMarchingPS::CustomConstrucFunc,
+	XRenderSkyAtmosphereRayMarchingPS::ModifyShaderCompileSettings);
 
 
 void XDeferredShadingRenderer::SkyAtmosPhereUpdata(XRHICommandList& RHICmdList)
@@ -304,6 +315,7 @@ void XDeferredShadingRenderer::SkyAtmosPhereUpdata(XRHICommandList& RHICmdList)
 	cbSkyAtmosphereIns.TransmittanceSampleCount = TransmittanceSampleCount;
 	cbSkyAtmosphereIns.MultiScatteringSampleCount = MultiScatteringSampleCount;
 	cbSkyAtmosphereIns.GroundAlbedo = XVector4(0.66, 0.66, 0.66, 1.0);
+	//cbSkyAtmosphereIns.GroundAlbedo = XVector4(170, 170, 170, 1.0);
 	cbSkyAtmosphereIns.MiePhaseG = 0.8f;
 
 	cbSkyAtmosphereIns.Light0Illuminance = XVector4(MainLightColor.x * LightIntensity, MainLightColor.y * LightIntensity, MainLightColor.z * LightIntensity, 0);
@@ -315,14 +327,48 @@ void XDeferredShadingRenderer::SkyAtmosPhereUpdata(XRHICommandList& RHICmdList)
 	SkyAtmosphereResourece.RHICbSkyAtmosphere->UpdateData(&cbSkyAtmosphereIns, sizeof(XSkyAtmosphereParams), 0);
 }
 
+class XTransmittanceLUTCS :public XGloablShader
+{
+public:
+	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer) { return new XTransmittanceLUTCS(Initializer); }
+	static ShaderInfos StaticShaderInfos;
+	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
+public:
+	struct SParameters
+	{
+		XRHIConstantBuffer* SkyAtmosphere;
+		XRHIUnorderedAcessView* TransmittanceLut;
+	};
+
+	XTransmittanceLUTCS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
+	{
+		SkyAtmosphere.Bind(Initializer.ShaderParameterMap, "SkyAtmosphere");
+		TransmittanceLut.Bind(Initializer.ShaderParameterMap, "TransmittanceLut");
+	}
+
+	void SetParameters(XRHICommandList& RHICommandList, SParameters Parameters)
+	{
+		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Compute, SkyAtmosphere, Parameters.SkyAtmosphere);
+		SetShaderUAVParameter(RHICommandList, EShaderType::SV_Compute, TransmittanceLut, Parameters.TransmittanceLut);
+	}
+
+	CBVParameterType SkyAtmosphere;
+	UAVParameterType TransmittanceLut;
+};
+XTransmittanceLUTCS::ShaderInfos XTransmittanceLUTCS::StaticShaderInfos("TransmittanceLutCS", GET_SHADER_PATH("SkyAtmosphereTransmittanceLUT.hlsl"), "TransmittanceLutCS", EShaderType::SV_Compute, XTransmittanceLUTCS::CustomConstrucFunc, XTransmittanceLUTCS::ModifyShaderCompileSettings);
+
+
 void XDeferredShadingRenderer::SkyAtmosPhereRendering(XRHICommandList& RHICmdList)
 {
 	{
-		RHICmdList.RHIEventBegin(1, "RenderTransmittanceLutCS", sizeof("RenderTransmittanceLutCS"));
-		TShaderReference<XRenderTransmittanceLutCS> Shader = GetGlobalShaderMapping()->GetShader<XRenderTransmittanceLutCS>();
-		XRHIComputeShader* ComputeShader = Shader.GetComputeShader();
+		RHICmdList.RHIEventBegin(1, "TransmittanceLutCS", sizeof("TransmittanceLutCS"));
+		TShaderReference<XTransmittanceLUTCS> TransmittanceLutCS = GetGlobalShaderMapping()->GetShader<XTransmittanceLUTCS>();
+		XTransmittanceLUTCS::SParameters Parameters;
+		Parameters.SkyAtmosphere = SkyAtmosphereResourece.RHICbSkyAtmosphere.get();
+		Parameters.TransmittanceLut = GetRHIUAVFromTexture(SkyAtmosphereResourece.TransmittanceLutUAV.get());
+		XRHIComputeShader* ComputeShader = TransmittanceLutCS.GetComputeShader();
 		SetComputePipelineStateFromCS(RHICmdList, ComputeShader);
-		Shader->SetParameters(RHICmdList, GetRHIUAVFromTexture(SkyAtmosphereResourece.TransmittanceLutUAV.get()), SkyAtmosphereResourece.RHICbSkyAtmosphere.get());
+		TransmittanceLutCS->SetParameters(RHICmdList, Parameters);
 		RHICmdList.RHIDispatchComputeShader(256 / 8, 64 / 8, 1);
 		RHICmdList.RHIEventEnd();
 	}
@@ -351,55 +397,6 @@ void XDeferredShadingRenderer::SkyAtmosPhereRendering(XRHICommandList& RHICmdLis
 }
 
 
-class XRenderSkyAtmosphereRayMarchingPS :public XGloablShader
-{
-public:
-	static XXShader* CustomConstrucFunc(const XShaderInitlizer& Initializer)
-	{
-		return new XRenderSkyAtmosphereRayMarchingPS(Initializer);
-	}
-	static ShaderInfos StaticShaderInfos;
-	static void ModifyShaderCompileSettings(XShaderCompileSetting& OutSettings) {}
-
-public:
-	XRenderSkyAtmosphereRayMarchingPS(const XShaderInitlizer& Initializer) :XGloablShader(Initializer)
-	{
-		cbView.Bind(Initializer.ShaderParameterMap, "cbView");
-		SkyAtmosphere.Bind(Initializer.ShaderParameterMap, "SkyAtmosphere");
-
-		SkyViewLutTexture.Bind(Initializer.ShaderParameterMap, "SkyViewLutTexture");
-		SceneDepthTexture.Bind(Initializer.ShaderParameterMap, "SceneTexturesStruct_SceneDepthTexture");
-		TransmittanceLutTexture_Combine.Bind(Initializer.ShaderParameterMap, "TransmittanceLutTexture_Combine");
-	}
-
-	void SetParameter(
-		XRHICommandList& RHICommandList,
-		XRHIConstantBuffer* IncbView,
-		XRHIConstantBuffer* InSkyAtmosphere,
-		XRHITexture* InSkyViewLutTexture,
-		XRHITexture* InSceneDepthTexture,
-		XRHITexture* InTransmittanceLutTexture_Combine
-	)
-	{
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, cbView, IncbView);
-		SetShaderConstantBufferParameter(RHICommandList, EShaderType::SV_Pixel, SkyAtmosphere, InSkyAtmosphere);
-
-		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SkyViewLutTexture, InSkyViewLutTexture);
-		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, SceneDepthTexture, InSceneDepthTexture);
-		SetTextureParameter(RHICommandList, EShaderType::SV_Pixel, TransmittanceLutTexture_Combine, InTransmittanceLutTexture_Combine);
-	}
-
-	CBVParameterType cbView;
-	CBVParameterType SkyAtmosphere;
-
-	TextureParameterType SkyViewLutTexture;
-	TextureParameterType SceneDepthTexture;
-	TextureParameterType TransmittanceLutTexture_Combine;
-};
-XRenderSkyAtmosphereRayMarchingPS::ShaderInfos XRenderSkyAtmosphereRayMarchingPS::StaticShaderInfos(
-	"XRenderSkyAtmosphereRayMarchingPS", GET_SHADER_PATH("SkyAtmosphere.hlsl"),
-	"RenderSkyAtmosphereRayMarchingPS", EShaderType::SV_Pixel, XRenderSkyAtmosphereRayMarchingPS::CustomConstrucFunc,
-	XRenderSkyAtmosphereRayMarchingPS::ModifyShaderCompileSettings);
 
 void XDeferredShadingRenderer::SkyAtmoSphereCombine(XRHICommandList& RHICmdList)
 {
