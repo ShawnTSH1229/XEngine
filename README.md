@@ -27,7 +27,7 @@ cmake -G "Visual Studio 17 2022" ../
 
 1.[Virtual Shadow Map](https://shawntsh1229.github.io/2024/05/01/Virtual-Shadow-Map-In-XEngine/):
 
-High resolution virtual shadow map with shadow tile cache and clip maps
+High resolution virtual shadow map with shadow tile cache and clip maps. According to the Unreal Engine VSMs documentation, VSMs have four key features: **virtual high-resolution texture**, **clipmaps**, **only shade on-screen pixels** and **page cache**. We have implemented the **four features** listed above in the simplified virtual shadow map project
 
 <p align="left">
     <img src="/Resource/renderdoc.png" width="60%" height="60%">
@@ -37,7 +37,7 @@ High resolution virtual shadow map with shadow tile cache and clip maps
     <img src="/Resource/physical_tile_visualize.png" width="50%" height="50%">
 </p>
 
-2.[Sky atmosphere](https://shawntsh1229.github.io/2024/05/05/Sky-Atmosphere-In-XEngine/):
+2.[Sky atmosphere based on UE's solution](https://shawntsh1229.github.io/2024/05/05/Sky-Atmosphere-In-XEngine/):
 
 <p align="left">
     <img src="/Resource/skyatmosphere.png" width="80%" height="80%">
