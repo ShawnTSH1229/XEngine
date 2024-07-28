@@ -27,7 +27,15 @@ cmake -G "Visual Studio 17 2022" ../
 
 1.[Virtual Shadow Map](https://shawntsh1229.github.io/2024/05/01/Virtual-Shadow-Map-In-XEngine/):
 
-High resolution virtual shadow map with shadow tile cache and clip maps. According to the Unreal Engine VSMs documentation, VSMs have four key features: **virtual high-resolution texture**, **clipmaps**, **only shade on-screen pixels** and **page cache**. We have implemented the **four features** listed above in the simplified virtual shadow map project
+Virtual Shadow Maps (VSMs) is the new shadow mapping method used in Unreal Engine 5. I implemented a **simplified virtual shadow maps** in my **personal game engine**. Here is a brief introduction from the official unreal engine 5 documentation:
+>Virtual Shadow Maps have been developed with the following goals:
+>
+>* Significantly increase shadow resolution to match highly detailed Nanite geometry
+>* Plausible soft shadows with reasonable, controllable performance costs
+>* Provide a simple solution that works by default with limited amounts of adjustment needed
+>* Replace the many Stationary Light shadowing techniques with a single, unified path
+>
+>Conceptually, virtual shadow maps are just very **high-resolution** shadow maps. In their current implementation, they have a **virtual resolution** of 16k x 16k pixels. **Clipmaps** are used to increase resolution further for Directional Lights. To keep performance high at reasonable memory cost, VSMs split the >shadow map into tiles (or Pages) that are 128x128 each. Pages are allocated and rendered only as needed to shade **on-screen pixels** based on an analysis of the depth buffer. The pages are **cached** between frames unless they are invalidated by moving objects or light, which further improves performance.
 
 <p align="left">
     <img src="/Resource/renderdoc.png" width="60%" height="60%">
@@ -50,6 +58,8 @@ High resolution virtual shadow map with shadow tile cache and clip maps. Accordi
 5.HZB Culling
 
 6.Vulkan & Vulkan Ray Tracing
+
+7.DirectX12
 
 ## Source Tree
 
